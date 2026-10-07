@@ -1,5 +1,19 @@
-# Vos chiffres et votre configuration ne regardent personne.
+# Your figures and your configuration are nobody else's business.
 tableau-de-bord/donnees.json
 tableau-de-bord/config.json
-# L'installeur est un produit : il se refabrique, il ne se versionne pas.
+
+# Apple's daily sales reports: your revenue, country by country.
+logs/
+
+# The patterns you never want to publish — the list itself names them.
+tableau-de-bord/marqueurs.txt
+
+# Keys and environment files have no business in a repository, ever.
+*.p8
+*.pem
+*.key
+.env
+*.env
+
+# The installer is a product: it gets rebuilt, it does not get committed.
 installeur-tableau-de-bord.py
