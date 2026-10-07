@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard</title>
+<meta name="theme-color" content="#131310">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<link rel="apple-touch-icon" href="/icone-180.png">
+<link rel="icon" type="image/svg+xml" href="/icone.svg">
+<link rel="manifest" href="/manifest.webmanifest">
+<!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
+     holding the old one renders a page of unknown classes, and the SVGs fall back to
+     their default size — 300 × 150 pixels. Bump it on every CSS change. -->
+<link rel="stylesheet" href="/style.css?v=2">
+</head>
+<body>
+<div class="enveloppe">
+
+<header>
+  <span class="marque" aria-hidden="true">
+    <svg viewBox="0 0 64 64" width="30" height="30"><rect width="64" height="64" rx="12" fill="#000"/>
+      <text font-family="Arial Black, Arial" font-weight="900" font-size="30" fill="#EDEBE4"
+            x="32" y="30" text-anchor="middle">AB</text>
+      <rect fill="currentColor" x="5" y="38" width="18" height="7" rx="2"/>
+      <text font-family="Arial Black, Arial" font-weight="900" font-size="30" fill="#EDEBE4"
+            x="48" y="58" text-anchor="middle">cd</text></svg>
+  </span>
+  <h1>Dashboard<span id="quand">loading…</span></h1>
+  <button id="refaire" type="button" aria-label="Reload the figures">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 11-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+  </button>
+</header>
+
+<main id="corps"></main>
+
+<footer>
+  Private network — this dashboard is not reachable from the internet.<br>
+  Figures rebuilt by the morning task.
+</footer>
+</div>
+
+<script>
+(function () {
+  var corps = document.getElementById('corps');
+
+  function e(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function n(x) { return (x == null ? '—' : String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ',')); }
+  // « 05/10 » reads as 5 October here and as 10 May elsewhere. The month in letters costs
+  // the same width and leaves nothing to guess.
+  var MOIS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function jourCourt(iso) {
+    var p = iso.split('-');
+    return String(Number(p[2])) + ' ' + (MOIS[Number(p[1]) - 1] || p[1]);
+  }
+
+  // A histogram made of divs: legible, crisp on a Retina screen, nothing to download.
+  function barres(valeurs, jours) {
+    var max = Math.max.apply(null, valeurs.concat([1]));
+    var h = valeurs.map(function (v, i) {
+      var cl = v === 0 ? ' class="creux"' : (i === valeurs.length - 1 ? ' class="today"' : '');
+      return '<div' + cl + ' style="height:' + Math.max(2, Math.round(100 * v / max)) + '%"'
+           + ' title="' + e(jours[i]) + ' — ' + v + '"></div>';
+    }).join('');
+    return '<div class="barres">' + h + '</div><div class="axe"><span>'
+         + e(jourCourt(jours[0])) + '</span><span>max ' + max + '</span><span>'
+         + e(jourCourt(jours[jours.length - 1])) + '</span></div>';
+  }
+
+  // Glyphs drawn right here: a device is recognised faster by its outline than by its
+  // name, above all in a list. Stroked in currentColor, so they follow the text.
+  var SILHOUETTES = {
+    'iPhone':      '<rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="10" y1="5" x2="14" y2="5"/>',
+    'iPad':        '<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="19" r=".6"/>',
+    'Mac':         '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 19h20"/><path d="M10 16v3M14 16v3"/>',
+    'Desktop':     '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 19h20"/><path d="M10 16v3M14 16v3"/>',
+    'Apple TV':    '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+    'Apple Watch': '<rect x="7" y="6" width="10" height="12" rx="2.5"/><path d="M9.5 6V3h5v3M9.5 18v3h5v-3"/>',
+    'Android':     '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M9 1.5l1.2 1.6M15 1.5l-1.2 1.6"/>',
+    'Windows':     '<rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
+    'Linux':       '<circle cx="12" cy="12" r="8"/><path d="M9.5 10v1M14.5 10v1M9 16c1.8 1.4 4.2 1.4 6 0"/>',
+    'other':       '<circle cx="12" cy="12" r="7.5"/><path d="M12 8v5M12 16v.5"/>'
+  };
+  function silhouette(nom) {
+    var d = SILHOUETTES[nom] || SILHOUETTES['other'];
+    return '<svg class="appareil" viewBox="0 0 24 24" width="17" height="17" fill="none"'
+         + ' stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">'
+         + d + '</svg>';
+  }
+
+  function tuile(valeur, libelle, or) {
+    return '<div class="tuile"><div class="n' + (or ? ' or' : '') + '">' + e(n(valeur))
+         + '</div><div class="l">' + e(libelle) + '</div></div>';
+  }
+
+  // ── At a glance ────────────────────────────────────────────────────────────────────
+  // A few computed sentences rather than more tiles: what you want to know on opening the
+  // page in the morning, and above all what has CHANGED. An arrow says nothing without its
+  // basis of comparison, so every line carries its own.
+  function jours_entre(a, b) {
+    return Math.round((new Date(b) - new Date(a)) / 86400000);
+  }
+
+  var PICTOS = {
+    site:    '<path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/><circle cx="12" cy="12" r="9"/>',
+    telech:  '<path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>',
+    sous:    '<path d="M3 10h18M7 15h4"/><rect x="3" y="5" width="18" height="14" rx="2"/>',
+    horloge: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    sortie:  '<path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M15 12h6m0 0l-3-3m3 3l-3 3"/>',
+    attente: '<path d="M12 9v4m0 3v.5"/><path d="M10.3 3.9L2.6 17a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>'
+  };
+  function picto(k) {
+    // width/height on the tag: with no stylesheet — a stale cache, a failed load — an SVG
+    // renders at 300 × 150 pixels. The attribute avoids the disaster.
+    return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"'
+         + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+         + (PICTOS[k] || PICTOS.site) + '</svg>';
+  }
+
+  // A seven-point curve: the trend reads at a glance, where seven numbers have to be
+  // compared one by one.
+  function courbe(vals) {
+    if (!vals || vals.length < 2) return '';
+    var max = Math.max.apply(null, vals.concat([1])), n = vals.length;
+    var pts = vals.map(function (v, i) {
+      return (i * 100 / (n - 1)).toFixed(1) + ',' + (22 - 20 * v / max).toFixed(1);
+    }).join(' ');
+    return '<svg class="courbe" viewBox="0 0 100 24" width="100%" height="26"'
+         + ' preserveAspectRatio="none"'
+         + ' fill="none">'
+         + '<polyline points="' + pts + '" stroke="var(--accent)" stroke-width="1.6"'
+         + ' stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+         + '</svg>';
+  }
+
+  function jours_entre(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+  function fiche(o) {
+    return '<div class="fiche' + (o.large ? ' large' : '') + '">'
+      + '<div class="f-tete">' + picto(o.picto) + '<span>' + e(o.titre) + '</span></div>'
+      + '<div class="f-chiffre">' + e(o.chiffre) + '</div>'
+      + '<div class="f-unite">' + e(o.unite) + '</div>'
+      + (o.courbe || '')
+      + '<div class="f-bas"><span class="f-ref">' + e(o.ref) + '</span>'
+      + (o.badge ? '<span class="badge ' + o.ton + '">' + e(o.badge) + '</span>' : '')
+      + '</div>' + (o.jauge || '') + '</div>';
+  }
+
+  // ── At a glance: what you want to know on opening the page, and above all what has
+  // CHANGED. Every card carries its basis of comparison: a lone number says nothing.
+  function essentiel(d) {
+    var fiches = '', alertes = '';
+
+    (d.sites || []).forEach(function (s) {
+      var serie = s.serie, v = serie[serie.length - 2];        // yesterday: last full day
+      var sept = serie.slice(-8, -1);
+      var moy = sept.reduce(function (a, x) { return a + x.visiteurs; }, 0) / (sept.length || 1);
+      var hier = v ? v.visiteurs : 0;
+      var ecart = moy ? Math.round(100 * (hier - moy) / moy) : 0;
+      fiches += fiche({
+        picto: 'site', titre: s.nom.replace('.ch', ''), chiffre: hier,
+        unite: 'visitor' + (hier > 1 ? 's' : '') + ' yesterday',
+        courbe: courbe(sept.map(function (x) { return x.visiteurs; })),
+        ref: '7-day avg: ' + moy.toFixed(1),
+        badge: ecart > 0 ? '+' + ecart + '%' : (ecart < 0 ? ecart + '%' : '='),
+        ton: ecart > 0 ? 'hausse' : (ecart < 0 ? 'baisse' : 'egal')
+      });
+    });
+
+    var a = d.appstore;
+    if (a && a.serie && a.serie.length) {
+      // The series columns carry each app's NAME: we sum over the apps declared in the
+      // configuration, never over a list of names written here.
+      var noms = (a.apps || []).map(function (x) { return x.nom; });
+      var somme = function (x) {
+        return noms.reduce(function (t, nom) { return t + (x[nom] || 0); }, 0);
+      };
+      var der = a.serie[a.serie.length - 1];
+      var sept = a.serie.slice(-7);
+      var tot7 = sept.reduce(function (t, x) { return t + somme(x); }, 0);
+      var moy7 = tot7 / (sept.length || 1);
+      var ec = moy7 ? Math.round(100 * (somme(der) - moy7) / moy7) : 0;
+      fiches += fiche({
+        picto: 'telech', titre: 'Installs', chiffre: somme(der),
+        unite: 'on ' + jourCourt(der.jour),
+        courbe: courbe(sept.map(somme)),
+        ref: tot7 + ' over 7 days',
+        badge: ec > 0 ? '+' + ec + '%' : (ec < 0 ? ec + '%' : '='),
+        ton: ec > 0 ? 'hausse' : (ec < 0 ? 'baisse' : 'egal')
+      });
+      if (a.dernier_achat) {
+        var n = jours_entre(a.dernier_achat, (d.genere_le || '').slice(0, 10));
+        fiches += fiche({
+          picto: 'horloge', titre: 'Last purchase', chiffre: n,
+          unite: n > 1 ? 'days without a sale' : (n === 1 ? 'day without a sale' : 'sold today'),
+          ref: jourCourt(a.dernier_achat),
+          badge: n > 7 ? 'watch' : 'recent', ton: n > 7 ? 'baisse' : 'hausse'
+        });
+      }
+      var rec = (a.recettes || [])[0];
+      if (rec) {
+        fiches += fiche({
+          picto: 'sous', titre: 'Revenue', chiffre: rec.montant.toFixed(2),
+          unite: rec.monnaie + ' since the start',
+          ref: (a.apps.reduce(function (t, x) { return t + x.achats; }, 0)) + ' purchases in all'
+        });
+      }
+    }
+
+    (d.sites || []).forEach(function (s) {
+      if (!s.departs || !s.departs.length) return;
+      var t = s.departs.reduce(function (o, x) { o.h += x.humains; o.t += x.total; return o; },
+                               { h: 0, t: 0 });
+      var pc = t.t ? (100 * t.h / t.t) : 0;
+      fiches += fiche({
+        large: true, picto: 'sortie', titre: 'Exits to the App Store', chiffre: t.h,
+        unite: 'human exit' + (t.h > 1 ? 's' : '') + ' of ' + t.t + ' clicks',
+        ref: 'the rest are robots, which follow redirects',
+        jauge: '<div class="jauge"><i style="width:' + Math.max(1, pc).toFixed(1) + '%"></i></div>'
+      });
+    });
+
+    var attente = [];
+    (d.fiches ? d.fiches.apps : []).forEach(function (x) {
+      x.plateformes.forEach(function (p) {
+        if (p.en_cours) attente.push(x.nom + ' ' + p.en_cours.split(' · ')[0]);
+      });
+    });
+    attente = attente.filter(function (v, i, t) { return t.indexOf(v) === i; });
+    if (attente.length) {
+      alertes += '<div class="alerte-ligne">' + picto('attente') + '<div><div class="a-txt">'
+        + e(attente.join(', ')) + ' is awaiting submission</div>'
+        + '<div class="a-det">The listing is ready; the version has not gone out.</div></div></div>';
+    }
+    (d.sites || []).forEach(function (s) {
+      (s.moteurs || []).forEach(function (m) {
+        // A page you watch that a crawler ignores: worth raising, not burying.
+        if (m.page_surveillee && m.total > 0 && !m.sur_la_page) {
+          alertes += '<div class="alerte-ligne">' + picto('attente') + '<div><div class="a-txt">'
+            + e(m.nom) + ' has never visited ' + e(m.page_surveillee)
+            + '</div><div class="a-det">' + m.total + ' hits elsewhere on '
+            + e(s.nom) + '.</div></div></div>';
+        }
+      });
+    });
+
+    if (!fiches && !alertes) return '';      // nothing to sum up: no heading either
+    return (fiches ? '<div class="essentiel-grille">' + fiches + '</div>' : '') + alertes;
+  }
+
+  function site(s) {
+    var jours = s.serie.map(function (x) { return x.jour; });
+    var pages = s.serie.reduce(function (a, x) { return a + x.pages; }, 0);
+    var sept = s.serie.slice(-7).reduce(function (a, x) { return a + x.visiteurs; }, 0);
+    // A site's name IS its domain: we make it the base address, and every page in the list
+    // becomes a link — seeing a page climb makes you want to open it at once.
+    var base = 'https://' + s.nom;
+    var h = '<div class="carte"><h3><a class="lien" href="' + e(base) + '" target="_blank"'
+          + ' rel="noopener">' + e(s.nom) + ' ↗</a></h3>'
+          + '<p class="sous">last ' + e(s.serie.length) + ' days</p>'
+          + '<div class="tuiles">'
+          + tuile(pages, pages > 1 ? 'pages read' : 'page read', true)
+          + tuile(sept, (sept > 1 ? 'visitors' : 'visitor') + ' over 7 d')
+          + tuile(s.humains, (s.humains > 1 ? 'humans' : 'human') + ' in all')
+          + tuile(s.robots, s.robots > 1 ? 'robots' : 'robot')
+          + '</div>'
+          + barres(s.serie.map(function (x) { return x.visiteurs; }), jours)
+          + '<p class="note">Human visitors per day. Robots, scanners and rented-server '
+          + 'addresses are set aside by the classifier.</p>';
+    if (s.pages_top && s.pages_top.length) {
+      h += '<h3 style="margin-top:1.1rem">Most-read pages</h3><div class="sous"></div>';
+      h += s.pages_top.slice(0, 8).map(function (p) {
+        // Open the page with one thumb: it is the first thing you want to do on seeing a
+        // page climb. A new tab, so the dashboard is not lost.
+        return '<div class="kv"><a class="lien" href="' + e(base + p.page) + '" target="_blank"'
+             + ' rel="noopener">' + e(p.page) + '</a><span class="v"><b>' + p.vues
+             + '</b></span></div>';
+      }).join('');
+    }
+    if (s.appareils && s.appareils.length) {
+      h += '<h3 style="margin-top:1.1rem">Devices</h3><div class="sous"></div>'
+         + s.appareils.slice(0, 6).map(function (a) {
+             return '<div class="kv"><span>' + silhouette(a.nom) + e(a.nom)
+                  + '</span><span class="v"><b>' + a.n + '</b></span></div>';
+           }).join('');
+    }
+    return h + '</div>';
+  }
+
+  function departs(s) {
+    if (!s.departs || !s.departs.length) return '';
+    var tot = s.departs.reduce(function (a, x) { return a + x.total; }, 0);
+    var hum = s.departs.reduce(function (a, x) { return a + x.humains; }, 0);
+    return '<div class="carte"><h3>' + e(s.nom) + '</h3>'
+      + '<p class="sous">Exits to the App Store — clicks on /go/ links, humans and the '
+      + 'total including robots</p>'
+      + '<div class="tuiles">' + tuile(hum, 'by a human', true) + tuile(tot, 'in all') + '</div>'
+      + '<table><thead><tr><th>Target</th><th>Humans</th><th>Total</th></tr></thead><tbody>'
+      + s.departs.slice(0, 8).map(function (d) {
+          return '<tr><td><a class="lien" href="https://' + e(s.nom) + '/go/' + e(d.cible) + '"'
+               + ' target="_blank" rel="noopener">' + e(d.cible) + '</a></td><td class="n">'
+               + d.humains + '</td><td class="n">' + d.total + '</td></tr>';
+        }).join('')
+      + '</tbody></table>'
+      + '<p class="note">⚠️ The total does not measure interest: robots follow redirects '
+      + 'with enthusiasm. Only the humans column says anything.</p></div>';
+  }
+
+  function moteurs(s) {
+    if (!s.moteurs || !s.moteurs.length) return '';
+    // With several sites, two cards under the same heading are indistinguishable: the
+    // site's name tells them apart, as it does in the Audience section.
+    return '<div class="carte"><h3>' + e(s.nom) + '</h3>'
+      + '<p class="sous">Indexing robots · hits over ' + s.serie.length + ' days'
+      + (s.moteurs[0] && s.moteurs[0].page_surveillee
+         ? ', and visits to ' + e(s.moteurs[0].page_surveillee) : '') + '</p>'
+      + s.moteurs.map(function (m) {
+          var p = !m.page_surveillee ? ''
+            : (m.sur_la_page > 0
+               ? '<span class="puce ok">' + e(m.page_surveillee) + ' ' + m.sur_la_page + '</span>'
+               : '<span class="puce alerte">never on ' + e(m.page_surveillee) + '</span>');
+          return '<div class="kv"><span>' + e(m.nom) + ' ' + p + '</span><span class="v"><b>'
+               + n(m.total) + '</b> hits</span></div>';
+        }).join('') + '</div>';
+  }
+
+  function appstore(a) {
+    if (!a) return '';
+    var tot = a.apps.reduce(function (o, x) {
+      ['neufs', 'repris', 'maj', 'achats'].forEach(function (k) { o[k] += x[k]; }); return o;
+    }, { neufs: 0, repris: 0, maj: 0, achats: 0 });
+    var h = '<div class="carte"><h3>Since the start</h3>'
+      + '<p class="sous">' + e(a.depuis) + ' → ' + e(a.jusqu_a) + ' · ' + a.journees + ' days</p>'
+      + '<div class="tuiles">' + tuile(tot.neufs, 'installs', true)
+      + tuile(tot.achats, 'purchases')
+      + (a.recettes.length ? tuile(a.recettes[0].montant.toFixed(2) + ' ' + a.recettes[0].monnaie,
+                                   'in revenue') : '')
+      + '</div>'
+      + '<table><thead><tr><th>App</th><th>Installs</th><th>Re-dl</th><th>Upd.</th><th>Purch.</th></tr></thead><tbody>'
+      + a.apps.map(function (x) {
+          return '<tr><td>' + e(x.nom) + '</td><td class="n">' + n(x.neufs) + '</td><td class="n">'
+               + n(x.repris) + '</td><td class="n">' + n(x.maj) + '</td><td class="n">'
+               + (x.achats || '—') + '</td></tr>';
+        }).join('')
+      + '<tr class="total"><td>Total</td><td class="n">' + n(tot.neufs) + '</td><td class="n">'
+      + n(tot.repris) + '</td><td class="n">' + n(tot.maj) + '</td><td class="n">' + tot.achats
+      + '</td></tr></tbody></table>';
+    if (a.recettes.length > 1) {
+      h += '<p class="note">Revenue: ' + a.recettes.map(function (r) {
+        return r.montant.toFixed(2) + ' ' + r.monnaie; }).join(' · ')
+        + ' — never summed across currencies.</p>';
+    }
+    h += '</div>';
+
+    if (a.serie && a.serie.length) {
+      var jours = a.serie.map(function (x) { return x.jour; });
+      // The table shows SEVEN days: its columns are those of those seven days. An app with
+      // nothing over the week would hold a column of dashes, and on a phone that is room
+      // taken from the others. Failing any, we show them all.
+      var sem = a.serie.slice(-7);
+      var cols = (a.apps || []).filter(function (x) {
+        return sem.some(function (j) { return j[x.nom]; });
+      });
+      if (!cols.length) cols = a.apps || [];
+      var tous = (a.apps || []).map(function (x) { return x.nom; });
+      h += '<div class="carte"><h3>Installs per day</h3>'
+        + '<p class="sous">First downloads, all apps</p>'
+        + barres(a.serie.map(function (x) {
+            return tous.reduce(function (t, nom) { return t + (x[nom] || 0); }, 0);
+          }), jours)
+        + '<table><thead><tr><th>Day</th>'
+        + cols.map(function (c) { return '<th>' + e(c.nom) + '</th>'; }).join('')
+        + '<th>Upd.</th></tr></thead><tbody>'
+        + a.serie.slice(-7).reverse().map(function (x) {
+            return '<tr><td>' + e(jourCourt(x.jour)) + '</td>'
+                 + cols.map(function (c) {
+                     return '<td class="n">' + (x[c.nom] || '—') + '</td>'; }).join('')
+                 + '<td class="n">' + (x.maj || '—') + '</td></tr>';
+          }).join('')
+        + '</tbody></table></div>';
+    }
+    if (a.appareils && a.appareils.length) {
+      h += '<div class="carte"><h3>Installed devices</h3><p class="sous">Since the start</p>'
+        + a.appareils.filter(function (x) { return x.nom; }).map(function (x) {
+            return '<div class="kv"><span>' + silhouette(x.nom) + e(x.nom)
+                 + '</span><span class="v"><b>' + n(x.n) + '</b></span></div>';
+          }).join('') + '</div>';
+    }
+    return h;
+  }
+
+  function fiches(f) {
+    if (!f) return '';
+    var h = '<div class="carte"><h3>Listing status</h3><p class="sous">Versions on sale and in preparation</p>';
+    f.apps.forEach(function (a) {
+      h += '<div class="kv"><span><b>' + e(a.nom) + '</b></span><span class="v">'
+         + a.plateformes.map(function (p) {
+             return e(p.nom.replace('_OS', '').replace('MAC', 'Mac').replace('TV', 'TV')) + ' '
+                  + e(p.en_vente || '—');
+           }).join(' · ') + '</span></div>';
+      a.plateformes.filter(function (p) { return p.en_cours; }).forEach(function (p) {
+        h += '<div class="kv"><span style="color:var(--faible);padding-left:.8rem">↳ '
+           + e(p.nom.replace('_OS', '')) + '</span><span class="v"><span class="puce or">'
+           + e(p.en_cours.replace(/_/g, ' ').toLowerCase()) + '</span></span></div>';
+      });
+    });
+    h += '</div>';
+    if (f.beta && f.beta.length) {
+      h += '<div class="carte"><h3>TestFlight beta</h3><p class="sous">External groups</p>'
+        + f.beta.map(function (b) {
+            return '<div class="kv"><span>' + e(b.app) + ' — ' + e(b.groupe) + '</span>'
+                 + '<span class="v"><b>' + (b.testeurs == null ? '?' : b.testeurs) + '</b> testers '
+                 + (b.lien_public ? '<span class="puce ok">public link</span>'
+                                  : '<span class="puce alerte">no public link</span>') + '</span></div>';
+          }).join('') + '</div>';
+    }
+    return h;
+  }
+
+  function versions(liste) {
+    if (!liste || !liste.length) return '';
+    return liste.map(function (a) {
+      return '<div class="carte"><h3>' + e(a.app) + '</h3>'
+        + '<p class="sous">' + a.versions.length + ' versions · “created” is the day the '
+        + 'listing was opened, “on sale from” that of the first installs</p>'
+        + '<table><thead><tr><th>Version</th><th>Created</th><th>On sale from</th><th>Installs</th>'
+        + '</tr></thead><tbody>'
+        + a.versions.map(function (v) {
+            var etat = v.etat === 'READY_FOR_SALE' ? ''
+              : ' <span class="puce or">' + e(v.etat.replace(/_/g, ' ').toLowerCase()) + '</span>';
+            return '<tr><td><b>' + e(v.version) + '</b>' + etat
+                 + '<br><span style="font-size:.72rem;color:var(--faible)">'
+                 + e(v.plateformes.join(' · ')) + '</span></td>'
+                 + '<td class="n">' + e(v.creee ? jourCourt(v.creee) : '—') + '</td>'
+                 + '<td class="n">' + e(v.premiere_vente ? jourCourt(v.premiere_vente) : '—') + '</td>'
+                 + '<td class="n">' + (v.installations || '—') + '</td></tr>';
+          }).join('')
+        + '</tbody></table>'
+        + '<p class="note">Installs are counted by version number, all platforms together: '
+        + 'Apple\'s reports do not tell them apart.</p></div>';
+    }).join('');
+  }
+
+  function fils(liste) {
+    if (!liste || !liste.length) return '';
+    return liste.map(function (f) {
+      return '<div class="carte"><h3><a class="lien" href="' + e(f.url) + '" target="_blank"'
+        + ' rel="noopener">' + e(f.compte) + ' ↗</a></h3>'
+        + '<p class="sous">' + (f.nom ? e(f.nom) + ' · ' : '')
+        + 'copied on ' + e((f.maj || '').slice(0, 16).replace('T', ' at ')) + '</p>'
+        + '<div class="tuiles">' + tuile(f.messages, 'posts copied', true)
+        + tuile(f.images, 'images')
+        + tuile(f.favoris, 'favourites') + tuile(f.partages, 'boosts')
+        + (f.abonnes != null ? tuile(f.abonnes, 'followers') : '')
+        + (f.total_publies != null ? tuile(f.total_publies, 'posts in all') : '')
+        + '</div>'
+        + (f.derniers || []).slice(0, 3).map(function (p) {
+            return '<div class="kv"><span style="font-size:.82rem">' + e(p.texte) + '…</span>'
+                 + '<span class="v">♥ ' + p.favoris + ' · ⇄ ' + p.partages + '</span></div>';
+          }).join('') + '</div>';
+    }).join('');
+  }
+
+  var bouton = document.getElementById('refaire');
+  var enCours = false;
+
+  function charger() {
+    if (enCours) return;
+    enCours = true;
+    if (bouton) bouton.classList.add('tourne');
+    fetch('/donnees.json', { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (d) {
+      // The trim comes from the configuration: title, wordmark and accent colour.
+      if (d.titre) {
+        document.title = d.titre;
+        var h1 = document.querySelector('h1');
+        h1.childNodes[0].nodeValue = d.titre;
+      }
+      if (d.marque) {
+        var t = document.querySelectorAll('.marque text');
+        if (t[0]) t[0].textContent = d.marque.haut || '';
+        if (t[1]) t[1].textContent = d.marque.bas || '';
+      }
+      if (d.accent) {
+        document.documentElement.style.setProperty('--accent', d.accent);
+      }
+      document.getElementById('quand').textContent =
+        'snapshot of ' + (d.genere_le || '').slice(0, 16).replace('T', ' at ');
+      var h = '';
+      // A heading with nothing under it says nothing: a section appears only if it has
+      // something to show. A partial configuration therefore gives a shorter page, not a
+      // page full of holes.
+      var bloc = function (titre, contenu) {
+        if (contenu) h += '<h2>' + titre + '</h2>' + contenu;
+      };
+      var joindre = function (f) {
+        return (d.sites || []).map(f).join('');
+      };
+      bloc('At a glance', essentiel(d));
+      bloc('Site audience', joindre(site));
+      bloc('To the App Store', joindre(function (s) {
+        return (s.departs && s.departs.length) ? departs(s) : '';
+      }));
+      bloc('App Store', appstore(d.appstore));
+      bloc('Products', fiches(d.fiches));
+      bloc('Version history', versions(d.versions));
+      bloc('Mastodon', (d.fils && d.fils.length) ? fils(d.fils) : '');
+      bloc('Indexing', joindre(moteurs));
+      corps.innerHTML = h || '<div class="carte"><h3>Nothing to show yet</h3>'
+        + '<p class="sous">Fill in tableau-de-bord/config.json, then run the generator '
+        + 'again.</p></div>';
+    })
+    .catch(function (err) {
+      document.getElementById('quand').textContent = 'data unavailable';
+      corps.innerHTML = '<div class="carte erreur"><h3>The figures did not arrive</h3>'
+        + '<p class="sous">' + e(err.message) + '</p>'
+        + '<p class="note">donnees.json is built by the morning task, '
+        + 'scripts/tableau-de-bord.py. If it is missing, that task has not run — or the '
+        + 'dashboard has just been installed.</p></div>';
+    })
+    .finally(function () {
+      enCours = false;
+      if (bouton) bouton.classList.remove('tourne');
+    });
+  }
+
+  if (bouton) bouton.addEventListener('click', charger);
+
+  // ⭐ On the home screen the app has NO address bar: nothing to reload with. The button
+  // answers for it, but the real comfort is refreshing by itself when you come back to it —
+  // that is the gesture you make without thinking. Not on every return, though: after a
+  // minute, otherwise every app switch fires a request for nothing.
+  var dernier = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && Date.now() - dernier > 60000) {
+      dernier = Date.now();
+      charger();
+    }
+  });
+
+  dernier = Date.now();
+  charger();
+})();
+</script>
+</body>
+</html>

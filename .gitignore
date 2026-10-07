@@ -1,0 +1,5 @@
+# Vos chiffres et votre configuration ne regardent personne.
+tableau-de-bord/donnees.json
+tableau-de-bord/config.json
+# L'installeur est un produit : il se refabrique, il ne se versionne pas.
+installeur-tableau-de-bord.py

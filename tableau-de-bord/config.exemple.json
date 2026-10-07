@@ -1,0 +1,36 @@
+{
+  "_read_me": "Copy this file to config.json and replace the values. Everything is optional: a missing section simply removes its section from the dashboard.",
+  "titre": "Dashboard",
+  "marque": {
+    "haut": "AB",
+    "bas": "cd"
+  },
+  "accent": "#E8972E",
+  "jours": 30,
+  "_fuseau": "Optional: the time zone that cuts the days, in IANA form (Europe/Paris, America/Montreal…). Absent, the machine's own zone is used.",
+  "fuseau": null,
+  "sites": [
+    {
+      "nom": "example.test",
+      "journaux": "~/sites/example/logs/nginx/access-*.log",
+      "_classement": "Optional: a script that writes a CSV ip,type,source,user_agent. Without it, a fallback classifier recognises robots by their user-agent.",
+      "classement": null,
+      "_page_surveillee": "Optional: a page you want to know whether indexing robots visit. The dashboard warns you when a crawler visits the site without ever opening that one.",
+      "page_surveillee": null
+    }
+  ],
+  "appstore": {
+    "_cle": "App Store Connect key with the Sales role. The .p8 must sit next to the .env file, named AuthKey_<KEY_ID>.p8. It never leaves the machine.",
+    "env": "~/.appstore/ventes.env",
+    "rapports": "logs/appstore",
+    "apps": [
+      {
+        "id": "0000000000",
+        "nom": "My app",
+        "sku": "test.example.myapp"
+      }
+    ]
+  },
+  "mastodon": [],
+  "_mastodon": "One object per account: { \"compte\": \"@you\", \"instance\": \"https://your.instance\" }. Without \"fichier\", the account is read through the instance's public API, with no token. Left empty, the section disappears."
+}
