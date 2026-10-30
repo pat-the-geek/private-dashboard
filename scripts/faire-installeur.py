@@ -25,6 +25,7 @@ TEXTES = {
     "scripts/ventes-appstore.py": RACINE / "scripts" / "ventes-appstore.py",
     "tableau-de-bord/index.html": RACINE / "tableau-de-bord" / "index.html",
     "tableau-de-bord/style.css": RACINE / "tableau-de-bord" / "style.css",
+    "tableau-de-bord/sw.js": RACINE / "tableau-de-bord" / "sw.js",
     "tableau-de-bord/nginx.conf": RACINE / "tableau-de-bord" / "nginx.conf",
     "tableau-de-bord/icone.svg": RACINE / "tableau-de-bord" / "icone.svg",
     "tableau-de-bord/manifest.webmanifest": RACINE / "tableau-de-bord" / "manifest.webmanifest",

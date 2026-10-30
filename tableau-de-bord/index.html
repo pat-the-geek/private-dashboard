@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=2">
+<link rel="stylesheet" href="/style.css?v=3">
 </head>
 <body>
 <div class="enveloppe">
@@ -30,7 +30,7 @@
             x="48" y="58" text-anchor="middle">cd</text></svg>
   </span>
   <h1>Dashboard<span id="quand">loading…</span></h1>
-  <button id="refaire" type="button" aria-label="Reload the figures">
+  <button id="refaire" type="button" aria-label="Recompute the figures">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M21 12a9 9 0 11-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
@@ -65,16 +65,32 @@
   }
 
   // A histogram made of divs: legible, crisp on a Retina screen, nothing to download.
-  function barres(valeurs, jours) {
+  // ⭐ `reperes` is a day → label map: the day a version went on sale gets a mark above its
+  // bar. Without it the curve answers "how many"; with it, "did that release do anything".
+  function barres(valeurs, jours, reperes) {
     var max = Math.max.apply(null, valeurs.concat([1]));
+    var r = reperes || {};
     var h = valeurs.map(function (v, i) {
-      var cl = v === 0 ? ' class="creux"' : (i === valeurs.length - 1 ? ' class="today"' : '');
-      return '<div' + cl + ' style="height:' + Math.max(2, Math.round(100 * v / max)) + '%"'
-           + ' title="' + e(jours[i]) + ' — ' + v + '"></div>';
+      var cl = v === 0 ? 'creux' : (i === valeurs.length - 1 ? 'today' : '');
+      var lab = r[jours[i]];
+      if (lab) cl += (cl ? ' ' : '') + 'sortie';
+      return '<div' + (cl ? ' class="' + cl + '"' : '') + ' style="height:'
+           + Math.max(2, Math.round(100 * v / max)) + '%"'
+           + ' title="' + e(jours[i]) + ' — ' + v + (lab ? ' · ' + e(lab) : '') + '"></div>';
     }).join('');
-    return '<div class="barres">' + h + '</div><div class="axe"><span>'
+    // Beyond about forty-five bars the gap eats the bar: on a phone they became threads.
+    var dense = valeurs.length > 45 ? ' dense' : '';
+    // La légende, la plus récente d'abord — c'est celle qu'on cherche — et six au plus :
+    // douze sorties nommées faisaient sept lignes de texte sous un graphique de deux.
+    var marques = jours.filter(function (j) { return r[j]; }).reverse();
+    var six = marques.slice(0, 6);
+    return '<div class="barres' + dense + '">' + h + '</div><div class="axe"><span>'
          + e(jourCourt(jours[0])) + '</span><span>max ' + max + '</span><span>'
-         + e(jourCourt(jours[jours.length - 1])) + '</span></div>';
+         + e(jourCourt(jours[jours.length - 1])) + '</span></div>'
+         + (marques.length ? '<p class="note">▼ ' + six.map(function (j) {
+             return e(r[j]) + ' · ' + e(jourCourt(j)); }).join(' · ')
+             + (marques.length > six.length
+                ? ' · +' + (marques.length - six.length) + ' earlier' : '') + '</p>' : '');
   }
 
   // Glyphs drawn right here: a device is recognised faster by its outline than by its
@@ -98,6 +114,15 @@
          + d + '</svg>';
   }
 
+  // Un code ISO à deux lettres donne son drapeau par calcul : deux indicateurs
+  // régionaux. Aucune table à embarquer, et rien d'écrit en dur sur un pays.
+  function drapeau(code) {
+    if (!code || code.length !== 2 || !/^[A-Za-z]{2}$/.test(code)) return '';
+    return String.fromCodePoint.apply(null, code.toUpperCase().split('').map(function (c) {
+      return 127397 + c.charCodeAt(0);
+    }));
+  }
+
   function tuile(valeur, libelle, or) {
     return '<div class="tuile"><div class="n' + (or ? ' or' : '') + '">' + e(n(valeur))
          + '</div><div class="l">' + e(libelle) + '</div></div>';
@@ -117,7 +142,10 @@
     sous:    '<path d="M3 10h18M7 15h4"/><rect x="3" y="5" width="18" height="14" rx="2"/>',
     horloge: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     sortie:  '<path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M15 12h6m0 0l-3-3m3 3l-3 3"/>',
-    attente: '<path d="M12 9v4m0 3v.5"/><path d="M10.3 3.9L2.6 17a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>'
+    attente: '<path d="M12 9v4m0 3v.5"/><path d="M10.3 3.9L2.6 17a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
+    boite:   '<path d="M3 7.5l9-4.5 9 4.5v9L12 21 3 16.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
+    disque:  '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    pouls:   '<path d="M2 12h4l3-7 4 14 3-7h6"/>'
   };
   function picto(k) {
     // width/height on the tag: with no stylesheet — a stale cache, a failed load — an SVG
@@ -160,6 +188,19 @@
   // CHANGED. Every card carries its basis of comparison: a lone number says nothing.
   function essentiel(d) {
     var fiches = '', alertes = '';
+
+    // ⭐ Le piège d'un tableau de bord refait chaque matin : quand la tâche ne tourne pas,
+    // la page s'affiche normalement avec les chiffres de la veille, et ne dit rien. Hors
+    // ligne — Tailscale coupé sur le téléphone, le 27/10/2026 — le service worker rend la
+    // dernière copie, et c'est le même silence. L'âge le dit, lui.
+    var ageH = d.genere_le ? (Date.now() - new Date(d.genere_le)) / 3600000 : null;
+    if (ageH != null && ageH > 26) {
+      alertes += '<div class="alerte-ligne">' + picto('horloge') + '<div><div class="a-txt">'
+        + 'These figures are ' + e(age(ageH)) + ' old</div><div class="a-det">'
+        + 'Dated ' + e((d.genere_le || '').slice(0, 16).replace('T', ' at '))
+        + '. Either the morning task has not run, or this page is offline and showing its '
+        + 'last copy.</div></div></div>';
+    }
 
     (d.sites || []).forEach(function (s) {
       var serie = s.serie, v = serie[serie.length - 2];        // yesterday: last full day
@@ -209,10 +250,11 @@
       }
       var rec = (a.recettes || [])[0];
       if (rec) {
+        var achats = a.apps.reduce(function (t, x) { return t + x.achats; }, 0);
         fiches += fiche({
           picto: 'sous', titre: 'Revenue', chiffre: rec.montant.toFixed(2),
           unite: rec.monnaie + ' since the start',
-          ref: (a.apps.reduce(function (t, x) { return t + x.achats; }, 0)) + ' purchases in all'
+          ref: achats + ' purchase' + (achats > 1 ? 's' : '') + ' in all'
         });
       }
     }
@@ -254,6 +296,51 @@
       });
     });
 
+    // Un 404 qu'un humain atteint est un lien mort, pas un reste d'index : il mérite la
+    // bande ambre, là où les milliers de passages de robots restent dans leur carte.
+    (d.sites || []).forEach(function (s) {
+      var x = s.erreurs;
+      if (!x || !x.humains) return;
+      var pire = (x.adresses || []).filter(function (a) { return a.humains; })[0];
+      alertes += '<div class="alerte-ligne">' + picto('attente') + '<div><div class="a-txt">'
+        + e(s.nom) + ' answered ' + x.humains + ' time' + (x.humains > 1 ? 's' : '')
+        + ' with an error to a human</div><div class="a-det">'
+        + (pire ? e(pire.chemin) + ' — HTTP ' + e(pire.code)
+                  + (pire.venant_de ? ', followed from ' + e(pire.venant_de) : '')
+                : 'see the section below') + '.</div></div></div>';
+    });
+
+    // ── Ce qui ne va pas sous la page ─────────────────────────────────────────────
+    // Enfoui au bas de la page, un conteneur mort ou un fichier qui ne rajeunit plus ne
+    // se voit pas. C'est précisément ce qu'on veut apprendre en ouvrant le matin.
+    var s = d.technique;
+    if (s) {
+      (s.services || []).filter(function (c) { return c.etat !== 'running'; })
+        .forEach(function (c) {
+          alertes += '<div class="alerte-ligne">' + picto('boite') + '<div><div class="a-txt">'
+            + e(c.nom) + ' is not running</div><div class="a-det">'
+            + e(c.depuis || c.etat || '') + '</div></div></div>';
+        });
+      (s.fraicheur || []).filter(function (f) { return !f.frais; }).forEach(function (f) {
+        alertes += '<div class="alerte-ligne">' + picto('horloge') + '<div><div class="a-txt">'
+          + e(f.nom) + (f.age_h == null ? ' is missing' : ' has not been rebuilt')
+          + '</div><div class="a-det">'
+          + (f.age_h == null ? 'no such file' : age(f.age_h) + ' old, expected under '
+             + age(f.seuil_h)) + '.</div></div></div>';
+      });
+      (s.sondes || []).filter(function (x) { return !x.ok; }).forEach(function (x) {
+        alertes += '<div class="alerte-ligne">' + picto('pouls') + '<div><div class="a-txt">'
+          + e(x.nom) + ' does not answer</div><div class="a-det">'
+          + (x.code == null ? 'no answer' : 'HTTP ' + x.code) + ' · ' + e(x.url)
+          + '</div></div></div>';
+      });
+      (s.disques || []).filter(function (x) { return x.part >= 90; }).forEach(function (x) {
+        alertes += '<div class="alerte-ligne">' + picto('disque') + '<div><div class="a-txt">'
+          + e(x.nom) + ' is ' + x.part + '% full</div><div class="a-det">'
+          + octets(x.libre) + ' left.</div></div></div>';
+      });
+    }
+
     if (!fiches && !alertes) return '';      // nothing to sum up: no heading either
     return (fiches ? '<div class="essentiel-grille">' + fiches + '</div>' : '') + alertes;
   }
@@ -267,12 +354,21 @@
     var base = 'https://' + s.nom;
     var h = '<div class="carte"><h3><a class="lien" href="' + e(base) + '" target="_blank"'
           + ' rel="noopener">' + e(s.nom) + ' ↗</a></h3>'
-          + '<p class="sous">last ' + e(s.serie.length) + ' days</p>'
+          // Dire « last 30 days » quand le journal n'en couvre que vingt ferait passer dix
+          // jours sans données pour dix jours sans lecteurs.
+          + '<p class="sous">' + (s.tronque
+              ? 'since ' + e(jourCourt(s.depuis)) + ' \u2014 the log goes back no further \u00b7 '
+                + e(s.serie.length) + ' days'
+              : 'last ' + e(s.serie.length) + ' days') + '</p>'
           + '<div class="tuiles">'
           + tuile(pages, pages > 1 ? 'pages read' : 'page read', true)
           + tuile(sept, (sept > 1 ? 'visitors' : 'visitor') + ' over 7 d')
           + tuile(s.humains, (s.humains > 1 ? 'humans' : 'human') + ' in all')
           + tuile(s.robots, s.robots > 1 ? 'robots' : 'robot')
+          // The classifier makes three piles and the page showed two: a scanner is neither
+          // a reader nor an indexing robot, and its count is the one that moves when the
+          // site is being probed.
+          + (s.scanners ? tuile(s.scanners, 'scanners') : '')
           + '</div>'
           + barres(s.serie.map(function (x) { return x.visiteurs; }), jours)
           + '<p class="note">Human visitors per day. Robots, scanners and rented-server '
@@ -287,12 +383,33 @@
              + '</b></span></div>';
       }).join('');
     }
+    // A relay page — the one an app opens to hand something over — is not a read. Left in
+    // the ranking it crushed it: 450 openings against a real page at 96.
+    if (s.pages_relais && s.pages_relais.length) {
+      h += s.pages_relais.map(function (p) {
+        return '<p class="note">Set aside: <b>' + e(p.page) + '</b> was opened ' + n(p.vues)
+             + ' times — a hand-off page, not a read.</p>';
+      }).join('');
+    }
     if (s.appareils && s.appareils.length) {
       h += '<h3 style="margin-top:1.1rem">Devices</h3><div class="sous"></div>'
          + s.appareils.slice(0, 6).map(function (a) {
              return '<div class="kv"><span>' + silhouette(a.nom) + e(a.nom)
                   + '</span><span class="v"><b>' + a.n + '</b></span></div>';
            }).join('');
+    }
+    // ⭐ Where they come from. Computed since the first day and never shown: a partner
+    // feeding fifty readers a month sat in the data with nothing to say it.
+    if (s.provenances && s.provenances.length) {
+      var maxp = s.provenances.reduce(function (a, x) { return Math.max(a, x.n); }, 1);
+      h += '<h3 style="margin-top:1.1rem">Where they come from</h3>'
+         + '<p class="sous">Human page views, by arrival channel</p>'
+         + '<table><tbody>' + s.provenances.map(function (p) {
+             return '<tr><td>' + e(p.nom) + '</td><td style="width:52%">'
+                  + '<div class="jauge"><i style="width:'
+                  + Math.round(100 * p.n / maxp) + '%"></i></div></td>'
+                  + '<td class="n">' + n(p.n) + '</td></tr>';
+           }).join('') + '</tbody></table>';
     }
     return h + '</div>';
   }
@@ -314,6 +431,117 @@
       + '</tbody></table>'
       + '<p class="note">⚠️ The total does not measure interest: robots follow redirects '
       + 'with enthusiasm. Only the humans column says anything.</p></div>';
+  }
+
+  // ── De la lecture à l'installation ────────────────────────────────────────────────
+  // Les trois chiffres existaient, dans trois cartes séparées, et personne ne les divisait.
+  // ⚠️ Ce n'est PAS une attribution : la recherche de l'App Store amène l'essentiel des
+  // installations. Le seul maillon que nous voyons vraiment est le départ depuis le site.
+  function entonnoir(s, a) {
+    if (!s.departs_serie || !s.departs_serie.length || !a || !a.serie || !a.serie.length) return '';
+    var depuis = s.serie.length ? s.serie[0].jour : null;
+    if (!depuis) return '';
+    var pages = s.serie.reduce(function (t, x) { return t + x.pages; }, 0);
+    var sorties = s.departs_serie.reduce(function (t, x) { return t + x.humains; }, 0);
+    var noms = (a.apps || []).map(function (x) { return x.nom; });
+    var memes = a.serie.filter(function (x) { return x.jour >= depuis; });
+    var inst = memes.reduce(function (t, x) {
+      return t + noms.reduce(function (u, nom) { return u + (x[nom] || 0); }, 0); }, 0);
+    if (!pages) return '';
+    return '<div class="carte"><h3>From page to install</h3>'
+      + '<p class="sous">' + e(s.nom) + ' \u00b7 the same ' + s.serie.length + ' days, '
+      + 'humans only</p>'
+      + '<div class="tuiles">' + tuile(pages, 'pages read', true)
+      + tuile(sorties, 'human exits') + tuile(inst, 'first installs') + '</div>'
+      + '<p class="note">'
+      + (sorties ? 'One exit per <b>' + n(Math.round(pages / sorties)) + '</b> pages read. '
+                 : 'Not one human exit over the period. ')
+      + 'The ' + n(inst) + ' installs are counted over the same days and are <b>not</b> '
+      + 'attributable to the site: App Store search brings most of them. The exit is the '
+      + 'only link between a page and a download that we can actually see.</p></div>';
+  }
+
+  // ── Ce qui répond mal ─────────────────────────────────────────────────────────────
+  // ⛔ Jusqu'au 30/10/2026 la page ne voyait QUE les 200 : six adresses retirées d'un site
+  // sont restées des semaines dans l'index d'un moteur, et c'est en interrogeant le moteur
+  // qu'on l'a appris — le journal, lui, les voyait passer.
+  function erreurs(s) {
+    var x = s.erreurs;
+    if (!x || !x.total) return '';
+    var base = 'https://' + s.nom;
+    return '<div class="carte"><h3>' + e(s.nom) + '</h3>'
+      + '<p class="sous">Page addresses that answered 4xx or 5xx over ' + s.serie.length
+      + ' days' + (x.scanners ? ' \u00b7 ' + n(x.scanners) + ' scanner probes set aside' : '')
+      + '</p>'
+      + '<div class="tuiles">' + tuile(x.total, 'wrong answers', true)
+      + tuile(x.humains, x.humains === 1 ? 'to a human' : 'to humans')
+      + tuile(x.moteurs, 'to an indexer') + '</div>'
+      + (x.adresses.length
+         ? '<table><thead><tr><th>Address</th><th>Code</th><th>Hits</th><th>Hum.</th>'
+           + '<th>Idx.</th></tr></thead>'
+           + '<tbody>' + x.adresses.map(function (d) {
+               return '<tr><td><a class="lien" href="' + e(base + d.chemin) + '"'
+                    + ' target="_blank" rel="noopener">' + e(d.chemin) + '</a>'
+                    + (d.venant_de
+                       ? '<br><span style="font-size:.72rem;color:var(--faible)">from '
+                         + e(d.venant_de) + '</span>' : '')
+                    + '</td><td class="n">' + e(d.code) + '</td><td class="n">' + n(d.n)
+                    + '</td><td class="n">' + (d.humains || '\u2014')
+                    + '</td><td class="n">' + (d.moteurs || '\u2014') + '</td></tr>';
+             }).join('') + '</tbody></table>'
+         : '<p class="note">Not one of them was asked for by a reader or by an indexing '
+           + 'robot — nothing here needs you.</p>')
+      + '<p class="note">⚠️ Listed by what they TEACH, never by how often they happen: only '
+      + 'the addresses a <b>reader</b> reached — a dead link, and the line says where it was '
+      + 'followed from — or that an <b>indexing robot</b> still asks for, which is a leftover '
+      + 'in its index and leaves once it has read the 410. The remaining ' + n(x.autres)
+      + ' hits are other robots knocking on doors that have never existed here.</p>'
+      + '<p class="note">' + x.codes.map(function (c) {
+          return '<b>' + e(c.code) + '</b> × ' + n(c.n); }).join(' · ') + '</p></div>';
+  }
+
+  // What people take away, grouped by one query parameter — here the language of the
+  // feed they add. A page view says someone looked; this says what they wanted.
+  // ⚠️ Humans only: on this page the robots outnumber them more than ten to one.
+  function imports(s) {
+    var i = s.imports;
+    if (!i || !i.total) return '';
+    var max = i.valeurs.reduce(function (a, v) { return Math.max(a, v.n); }, 1);
+    return '<div class="carte"><h3>' + e(s.nom) + '</h3>'
+      + '<p class="sous">' + e(i.nom) + ' \u2014 by ' + e(i.parametre) + ', humans only</p>'
+      + '<div class="tuiles">' + tuile(i.total, 'added') + tuile(i.personnes, 'people') + '</div>'
+      + '<table><thead><tr><th>' + e(i.parametre) + '</th><th></th><th>Count</th>'
+      + '</tr></thead><tbody>'
+      + i.valeurs.map(function (v) {
+          return '<tr><td>' + e(v.cle) + '</td>'
+               + '<td style="width:58%"><div class="jauge"><i style="width:'
+               + Math.round(100 * v.n / max) + '%"></i></div></td>'
+               + '<td class="n">' + v.n + '</td></tr>';
+        }).join('')
+      + '</tbody></table>'
+      + tableauValeurs(i.groupes, i.groupes_nom)
+      + '</div>';
+  }
+
+  // Same table, drawn twice: once by query parameter, once by the family the lookup
+  // table gives. Empty list, no heading — a site without that table shows nothing.
+  function tableauValeurs(valeurs, titre) {
+    if (!valeurs || !valeurs.length) return '';
+    // ⚠️ The catch-all lines are left out of the scale: "other themes" held 184 against a
+    // leader at 34, and every real bar would have been a sliver. They keep their number,
+    // so the column still adds up to the total, but no bar.
+    var max = valeurs.reduce(function (a, v) {
+      return v.reste ? a : Math.max(a, v.n); }, 1);
+    return '<h3 style="margin-top:1.1rem">' + e(titre || 'Groups') + '</h3>'
+      + '<table><tbody>'
+      + valeurs.map(function (v) {
+          return '<tr><td' + (v.reste ? ' class="sous"' : '') + '>' + e(v.cle) + '</td>'
+               + '<td style="width:58%">' + (v.reste ? '' :
+                   '<div class="jauge"><i style="width:'
+                   + Math.round(100 * v.n / max) + '%"></i></div>') + '</td>'
+               + '<td class="n">' + v.n + '</td></tr>';
+        }).join('')
+      + '</tbody></table>';
   }
 
   function moteurs(s) {
@@ -373,11 +601,19 @@
       });
       if (!cols.length) cols = a.apps || [];
       var tous = (a.apps || []).map(function (x) { return x.nom; });
+      // The day a version went on sale, marked above its bar: the question the whole
+      // measurement exists for — does a release sell anything?
+      var reperes = {};
+      (a.reperes || []).forEach(function (r) {
+        reperes[r.jour] = reperes[r.jour] ? reperes[r.jour] + ' + ' + r.texte : r.texte;
+      });
       h += '<div class="carte"><h3>Installs per day</h3>'
-        + '<p class="sous">First downloads, all apps</p>'
+        + '<p class="sous">First downloads, all apps'
+        + ((a.reperes && a.reperes.length) ? ' \u00b7 \u25bc a version going on sale' : '')
+        + '</p>'
         + barres(a.serie.map(function (x) {
             return tous.reduce(function (t, nom) { return t + (x[nom] || 0); }, 0);
-          }), jours)
+          }), jours, reperes)
         + '<table><thead><tr><th>Day</th>'
         + cols.map(function (c) { return '<th>' + e(c.nom) + '</th>'; }).join('')
         + '<th>Upd.</th></tr></thead><tbody>'
@@ -388,6 +624,26 @@
                  + '<td class="n">' + (x.maj || '—') + '</td></tr>';
           }).join('')
         + '</tbody></table></div>';
+    }
+    // ⭐ Les pays : calculés depuis le premier jour, jamais affichés. C'est pourtant ce
+    // qui décide des langues d'une fiche App Store.
+    var avecPays = (a.apps || []).filter(function (x) { return x.pays && x.pays.length; });
+    if (avecPays.length) {
+      h += '<div class="carte"><h3>Where it installs</h3>'
+        + '<p class="sous">First downloads by country, since the start</p>'
+        + avecPays.map(function (x) {
+            var max = x.pays.reduce(function (t, p) { return Math.max(t, p.n); }, 1);
+            return (avecPays.length > 1
+                    ? '<h3 style="margin-top:1rem">' + e(x.nom) + '</h3>' : '')
+              + '<table><tbody>' + x.pays.map(function (p) {
+                  return '<tr><td>' + drapeau(p.code) + ' ' + e(p.code || '?') + '</td>'
+                       + '<td style="width:52%"><div class="jauge"><i style="width:'
+                       + Math.round(100 * p.n / max) + '%"></i></div></td>'
+                       + '<td class="n">' + n(p.n) + '</td></tr>';
+                }).join('') + '</tbody></table>';
+          }).join('')
+        + '<p class="note">Only the top six per app: Apple reports a country for a first '
+        + 'download, not for an update.</p></div>';
     }
     if (a.appareils && a.appareils.length) {
       h += '<div class="carte"><h3>Installed devices</h3><p class="sous">Since the start</p>'
@@ -431,7 +687,7 @@
     if (!liste || !liste.length) return '';
     return liste.map(function (a) {
       return '<div class="carte"><h3>' + e(a.app) + '</h3>'
-        + '<p class="sous">' + a.versions.length + ' versions · “created” is the day the '
+        + '<p class="sous">' + a.versions.length + ' version' + (a.versions.length > 1 ? 's' : '') + ' · “created” is the day the '
         + 'listing was opened, “on sale from” that of the first installs</p>'
         + '<table><thead><tr><th>Version</th><th>Created</th><th>On sale from</th><th>Installs</th>'
         + '</tr></thead><tbody>'
@@ -471,15 +727,111 @@
     }).join('');
   }
 
+  // ── Le socle : ce que la machine dit d'elle-même ───────────────────────────────────
+  // Une page qui ne compte que des lecteurs se tait quand la machine s'arrête. Ces quatre
+  // cartes répondent « est-ce que ça tourne encore », pas « combien ».
+  function technique(s) {
+    if (!s) return '';
+    var h = '';
+
+    if (s.services && s.services.length) {
+      h += '<div class="carte"><h3>Containers</h3><p class="sous">Compose services</p>'
+        + s.services.map(function (c) {
+            var vivant = c.etat === 'running';
+            var p = !vivant ? '<span class="puce alerte">' + e(c.etat || '?') + '</span>'
+              : (c.sante && c.sante !== 'healthy'
+                 ? '<span class="puce alerte">' + e(c.sante) + '</span>'
+                 : '')
+              // Un compteur de redémarrages qui grimpe est le symptôme que personne ne
+              // regarde : le service répond, donc tout semble bien, et il meurt en boucle.
+              + (c.redemarrages ? ' <span class="puce alerte">' + c.redemarrages
+                                  + ' restart' + (c.redemarrages > 1 ? 's' : '') + '</span>' : '');
+            return '<div class="kv"><span>' + picto('boite') + ' ' + e(c.nom) + ' ' + p
+                 + '</span><span class="v"><b>' + (vivant ? 'up' : 'down') + '</b> '
+                 + e((c.depuis || '').replace(/^Up\s*/, '')) + '</span></div>';
+          }).join('') + '</div>';
+    }
+
+    if (s.fraicheur && s.fraicheur.length) {
+      h += '<div class="carte"><h3>Freshness</h3>'
+        + '<p class="sous">Files that must stay recent — a task that fails in silence is'
+        + ' seen here, because a file stops getting younger</p>'
+        + s.fraicheur.map(function (f) {
+            var part = f.age_h == null ? 100
+              : Math.min(100, Math.round(100 * f.age_h / (f.seuil_h || 1)));
+            return '<div class="kv"><span>' + picto('horloge') + ' ' + e(f.nom)
+                 + (f.frais ? '' : ' <span class="puce alerte">'
+                    + (f.age_h == null ? 'missing' : 'stale') + '</span>')
+                 + '</span><span class="v"><b>'
+                 + (f.age_h == null ? '—' : age(f.age_h)) + '</b> / ' + age(f.seuil_h)
+                 + '</span></div>'
+                 + '<div class="jauge"><i style="width:' + Math.max(2, part) + '%"></i></div>';
+          }).join('') + '</div>';
+    }
+
+    if (s.sondes && s.sondes.length) {
+      var lent = Math.max.apply(null, s.sondes.map(function (x) { return x.ms || 1; }));
+      h += '<div class="carte"><h3>Probes</h3><p class="sous">One GET on each address that'
+        + ' must answer, and how long it took</p>'
+        + s.sondes.map(function (p) {
+            return '<div class="kv"><span>' + picto('pouls') + ' ' + e(p.nom)
+                 + (p.ok ? '' : ' <span class="puce alerte">'
+                    + (p.code == null ? 'no answer' : p.code) + '</span>')
+                 + '</span><span class="v"><b>' + (p.ok ? p.code : '—') + '</b> '
+                 + p.ms + ' ms</span></div>'
+                 + '<div class="jauge"><i style="width:'
+                 + Math.max(2, Math.round(100 * (p.ms || 1) / lent)) + '%"></i></div>';
+          }).join('') + '</div>';
+    }
+
+    if (s.disques && s.disques.length) {
+      h += '<div class="carte"><h3>Disk</h3><p class="sous">Space left where it matters</p>'
+        + s.disques.map(function (d) {
+            return '<div class="kv"><span>' + picto('disque') + ' ' + e(d.nom)
+                 + (d.part >= 90 ? ' <span class="puce alerte">tight</span>' : '')
+                 + '</span><span class="v"><b>' + octets(d.libre) + '</b> free of '
+                 + octets(d.total) + '</span></div>'
+                 + '<div class="jauge"><i style="width:' + d.part + '%"></i></div>';
+          }).join('') + '</div>';
+    }
+    return h;
+  }
+
+  function age(h) {
+    if (h == null) return '—';
+    if (h < 1) return Math.round(h * 60) + ' min';
+    if (h < 48) return (h < 10 ? h.toFixed(1) : Math.round(h)) + ' h';
+    return Math.round(h / 24) + ' d';
+  }
+  function octets(o) {
+    var u = ['B', 'kB', 'MB', 'GB', 'TB'], i = 0;
+    while (o >= 1024 && i < u.length - 1) { o /= 1024; i++; }
+    return (o < 10 ? o.toFixed(1) : Math.round(o)) + ' ' + u[i];
+  }
+
+  // Les chiffres : le réseau d'abord, puis la dernière copie gardée par le service worker.
+  // Le second chemin existe pour le cas où celui-ci n'est pas encore installé — sinon c'est
+  // lui qui rend le filet, sans que la page ait à le savoir.
+  function lire() {
+    return fetch('/donnees.json', { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(function (err) {
+      if (!self.caches) throw err;
+      return caches.match('/donnees.json').then(function (c) {
+        if (!c) throw err;
+        return c.json();
+      });
+    });
+  }
+
   var bouton = document.getElementById('refaire');
   var enCours = false;
 
   function charger() {
-    if (enCours) return;
+    if (enCours) return Promise.resolve();
     enCours = true;
     if (bouton) bouton.classList.add('tourne');
-    fetch('/donnees.json', { cache: 'no-store' })
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    return lire()
     .then(function (d) {
       // The trim comes from the configuration: title, wordmark and accent colour.
       if (d.titre) {
@@ -509,14 +861,20 @@
       };
       bloc('At a glance', essentiel(d));
       bloc('Site audience', joindre(site));
+      bloc('What answers wrong', joindre(erreurs));
       bloc('To the App Store', joindre(function (s) {
-        return (s.departs && s.departs.length) ? departs(s) : '';
+        return (s.departs && s.departs.length)
+          ? departs(s) + entonnoir(s, d.appstore) : '';
+      }));
+      bloc('What people take away', joindre(function (s) {
+        return (s.imports && s.imports.total) ? imports(s) : '';
       }));
       bloc('App Store', appstore(d.appstore));
       bloc('Products', fiches(d.fiches));
       bloc('Version history', versions(d.versions));
       bloc('Mastodon', (d.fils && d.fils.length) ? fils(d.fils) : '');
       bloc('Indexing', joindre(moteurs));
+      bloc('System', technique(d.technique));
       corps.innerHTML = h || '<div class="carte"><h3>Nothing to show yet</h3>'
         + '<p class="sous">Fill in tableau-de-bord/config.json, then run the generator '
         + 'again.</p></div>';
@@ -535,7 +893,43 @@
     });
   }
 
-  if (bouton) bouton.addEventListener('click', charger);
+  // ↻ asks the host to REDO the figures, then re-reads them: without it, the button only
+  // re-read what the morning task had produced. The recomputation is an optional service
+  // (see nginx.conf); where it is not installed, /recalculer answers 404 or 502 and the
+  // button re-reads the figures, as before.
+  function recalculer() {
+    if (enCours) return;
+    if (bouton) bouton.classList.add('tourne');
+    var quand = document.getElementById('quand');
+    var echec = null;
+    fetch('/recalculer', { method: 'POST', headers: { 'X-Recalcul': '1' } })
+    .then(function (r) {
+      if (r.status === 200) return null;                      // recomputed under a minute ago
+      if (r.status !== 202 && r.status !== 409) throw new Error('no recomputation service');
+      quand.textContent = 'recomputing…';
+      return attendre(Date.now());
+    })
+    .then(function (st) { if (st && st.ok === false) echec = st.message || 'failed'; })
+    .catch(function () {})
+    .then(function () { return charger(); })
+    .then(function () { if (echec) quand.textContent += ' · recompute failed: ' + echec; });
+  }
+
+  // The recomputation takes a while (App Store, logs): poll its state every 2 s, 10 min at most.
+  function attendre(t0) {
+    return new Promise(function (fini) {
+      (function tour() {
+        fetch('/etat-recalcul', { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (st) {
+          if (!st.en_cours || Date.now() - t0 > 600000) fini(st); else setTimeout(tour, 2000);
+        })
+        .catch(function () { fini(null); });
+      })();
+    });
+  }
+
+  if (bouton) bouton.addEventListener('click', recalculer);
 
   // ⭐ On the home screen the app has NO address bar: nothing to reload with. The button
   // answers for it, but the real comfort is refreshing by itself when you come back to it —
@@ -551,6 +945,13 @@
 
   dernier = Date.now();
   charger();
+
+  // Enregistré APRÈS le premier chargement : l'installation du socle ne doit pas disputer
+  // le réseau aux chiffres. Sans service worker — navigateur ancien, page ouverte en http
+  // sans certificat — tout fonctionne comme avant, en ligne seulement.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
 })();
 </script>
 </body>

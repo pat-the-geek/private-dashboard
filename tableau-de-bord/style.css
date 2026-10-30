@@ -103,11 +103,21 @@ h2:first-of-type { margin-top: 1rem; }
 .tuile .l { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
 
 /* ── Histogram: divs, not a library ──────────────────────────────────────── */
-.barres { display: flex; align-items: flex-end; gap: 2px; height: 72px; margin: 0.3rem 0 0.35rem; }
+.barres { display: flex; align-items: flex-end; gap: 2px; height: 72px;
+            margin: 0.75rem 0 0.35rem; }
+/* Au-delà d'une quarantaine de jours, l'écart mange la barre : sur un téléphone elles
+   devenaient des fils. */
+.barres.dense { gap: 1px; }
 .barres div { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px;
               opacity: 0.85; position: relative; }
 .barres div.creux { background: var(--border); }
 .barres div.today { background: var(--accent-clair); }
+/* Le jour où une version est partie en vente : un repère au-dessus de la barre, et la
+   barre elle-même éclaircie. La légende sous l'axe les nomme. */
+.barres div.sortie { background: var(--accent-clair); opacity: 1; }
+.barres div.sortie::after { content: ''; position: absolute; left: 50%; top: -8px;
+    transform: translateX(-50%); border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent; border-top: 6px solid var(--accent-clair); }
 .axe { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--faible); }
 
 /* ── Tableaux ────────────────────────────────────────────────────────────── */
@@ -118,6 +128,9 @@ th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color
      font-weight: 600; }
 tbody tr:last-child td { border-bottom: 0; }
 td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Une adresse de rapport fait quatre-vingts caractères sans un espace : sans cette règle
+   elle pousse le tableau hors de l'écran du téléphone. Elle se coupe, rien n'est perdu. */
+td { overflow-wrap: anywhere; }
 tr.total td { font-weight: 700; border-top: 1px solid var(--border); }
 
 /* ── Key/value lists ─────────────────────────────────────────────────────── */

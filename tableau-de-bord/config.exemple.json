@@ -7,6 +7,8 @@
   },
   "accent": "#E8972E",
   "jours": 30,
+  "_jours_appstore": "Optional: the depth of the App Store series, which is NOT bound by the log window — the sales reports are kept on disk and go back to the first day on sale, where an nginx log gets rotated. Absent, « jours » is used.",
+  "jours_appstore": 90,
   "_fuseau": "Optional: the time zone that cuts the days, in IANA form (Europe/Paris, America/Montreal…). Absent, the machine's own zone is used.",
   "fuseau": null,
   "sites": [
@@ -16,7 +18,27 @@
       "_classement": "Optional: a script that writes a CSV ip,type,source,user_agent. Without it, a fallback classifier recognises robots by their user-agent.",
       "classement": null,
       "_page_surveillee": "Optional: a page you want to know whether indexing robots visit. The dashboard warns you when a crawler visits the site without ever opening that one.",
-      "page_surveillee": null
+      "page_surveillee": null,
+      "imports": {
+        "nom": "Items taken away",
+        "chemin": "/hand-off-page",
+        "parametre": "language",
+        "groupes": {
+          "nom": "Categories",
+          "table": "~/my-site/public/catalogue.json",
+          "depuis": [
+            "items",
+            "url",
+            "category"
+          ],
+          "libelles": [
+            "categories",
+            "key",
+            "label",
+            "icon"
+          ]
+        }
+      }
     }
   ],
   "appstore": {
@@ -32,5 +54,28 @@
     ]
   },
   "mastodon": [],
-  "_mastodon": "One object per account: { \"compte\": \"@you\", \"instance\": \"https://your.instance\" }. Without \"fichier\", the account is read through the instance's public API, with no token. Left empty, the section disappears."
+  "_mastodon": "One object per account: { \"compte\": \"@you\", \"instance\": \"https://your.instance\" }. Without \"fichier\", the account is read through the instance's public API, with no token. Left empty, the section disappears.",
+  "_technique": "Optional: what the machine says about itself. Every key inside is optional too. « docker » is a Compose project directory; « fraicheur » watches files that must stay recent — a path may contain a wildcard, and the most recent match is taken.",
+  "technique": {
+    "docker": null,
+    "disques": [
+      {
+        "nom": "disk",
+        "chemin": "/"
+      }
+    ],
+    "fraicheur": [
+      {
+        "nom": "Collected feed",
+        "fichier": "~/site/data/feed.json",
+        "heures": 1
+      }
+    ],
+    "sondes": [
+      {
+        "nom": "Site",
+        "url": "https://example.test/"
+      }
+    ]
+  }
 }
