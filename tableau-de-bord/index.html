@@ -251,10 +251,16 @@
       var rec = (a.recettes || [])[0];
       if (rec) {
         var achats = a.apps.reduce(function (t, x) { return t + x.achats; }, 0);
+        // ⚠️ Every currency, never summed: Apple pays each country in its own. Until
+        // 06/11/2026 only the first was shown, and the EUR and GBP sales were invisible.
+        var autres = a.recettes.slice(1).map(function (r) {
+          // Non-breaking spaces: a narrow tile wraps between amounts, never inside one.
+          return '+ ' + r.montant.toFixed(2) + ' ' + r.monnaie;
+        }).join(' ');
         fiches += fiche({
           picto: 'sous', titre: 'Revenue', chiffre: rec.montant.toFixed(2),
-          unite: rec.monnaie + ' since the start',
-          ref: achats + ' purchase' + (achats > 1 ? 's' : '') + ' in all'
+          unite: rec.monnaie + (autres ? ' ' + autres : ' since the start'),
+          ref: achats + ' purchase' + (achats > 1 ? 's' : '') + (autres ? ' since the start' : ' in all')
         });
       }
     }

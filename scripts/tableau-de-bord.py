@@ -397,6 +397,13 @@ def audience(site: dict) -> dict:
                         # rechargement : il occupe une ligne et n'apprend rien.
                         if d.split("?")[0].endswith(chemin.split("?")[0]):
                             d = ""
+                        # ⛔ Venue du tableau de bord lui-même (servi sur le tailnet, *.ts.net) :
+                        # c'est son propriétaire qui clique sur une erreur pour la vérifier. La compter
+                        # faisait grossir, à chaque vérification, l'erreur qu'il vérifiait
+                        # (06/11/2026 : la moitié des « erreurs vues par un humain »).
+                        if urllib.parse.urlsplit(d).hostname and \
+                                urllib.parse.urlsplit(d).hostname.endswith(".ts.net"):
+                            continue
                         err_brut.append((code, chemin.split("?")[0], ip, indexeur,
                                          t in HUMAIN, d if d and d != "-" else None))
                 if chemin_i and chemin.split("?")[0] == chemin_i and code == "200":
