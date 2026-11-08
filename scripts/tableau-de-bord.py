@@ -654,6 +654,57 @@ def sondes(liste: list) -> list[dict]:
     return out
 
 
+# The engine runs inside a virtual machine on macOS and Windows; these are the names its
+# process has had. A plain Linux host has dockerd itself, and no virtual machine.
+MOTEURS = ("com.docker.sailor", "com.docker.virtualization", "dockerd")
+
+
+def _depuis(secondes: float | None) -> float | None:
+    return None if secondes is None else round((time.time() - secondes) / 3600, 1)
+
+
+def moteur() -> dict | None:
+    """How long the container engine and the machine have each been up.
+
+    The engine can restart on its own — to install an update of its own application, for
+    instance. Every container goes down and comes back, and nothing says so: the services
+    answer again within seconds. It only shows up afterwards, as a memory figure that
+    halved overnight or a hole in a graph, and by then the logs that would explain it are
+    gone with the containers.
+
+    Two uptimes settle it. An engine younger than the machine means the engine alone was
+    restarted, and that is worth a line in the morning.
+    """
+    demarre = None
+    for nom in MOTEURS:
+        pids = subprocess.run(["pgrep", "-f", nom], capture_output=True, text=True).stdout.split()
+        if not pids:
+            continue
+        quand = subprocess.run(["ps", "-o", "lstart=", "-p", pids[0]],
+                               capture_output=True, text=True).stdout.strip()
+        try:
+            demarre = time.mktime(time.strptime(quand, "%a %b %d %H:%M:%S %Y"))
+        except ValueError:
+            demarre = None
+        break
+    machine = None
+    r = subprocess.run(["sysctl", "-n", "kern.boottime"], capture_output=True, text=True)
+    m = re.search(r"sec\s*=\s*(\d+)", r.stdout)
+    if m:
+        machine = int(m.group(1))
+    elif Path("/proc/uptime").exists():               # Linux
+        machine = time.time() - float(Path("/proc/uptime").read_text().split()[0])
+    if demarre is None and machine is None:
+        return None
+    d = {"moteur_h": _depuis(demarre), "machine_h": _depuis(machine)}
+    # One hour of slack: at boot the engine starts a little after the machine, and that is
+    # not a restart. Beyond a day it is history, not news.
+    d["redemarre_seul"] = bool(
+        d["moteur_h"] is not None and d["machine_h"] is not None
+        and d["moteur_h"] < 24 and d["moteur_h"] + 1 < d["machine_h"])
+    return d
+
+
 def technique() -> dict | None:
     c = CONFIG.get("technique") or {}
     if not c:
@@ -661,7 +712,8 @@ def technique() -> dict | None:
     d = {"services": services(c.get("docker")),
          "disques": disques(c.get("disques") or []),
          "fraicheur": fraicheur(c.get("fraicheur") or []),
-         "sondes": sondes(c.get("sondes") or [])}
+         "sondes": sondes(c.get("sondes") or []),
+         "moteur": moteur()}
     return d if any(d.values()) else None
 
 
