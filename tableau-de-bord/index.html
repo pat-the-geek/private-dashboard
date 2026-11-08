@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=3">
+<link rel="stylesheet" href="/style.css?v=4">
 </head>
 <body>
 <div class="enveloppe">
@@ -187,7 +187,7 @@
   // ── At a glance: what you want to know on opening the page, and above all what has
   // CHANGED. Every card carries its basis of comparison: a lone number says nothing.
   function essentiel(d) {
-    var fiches = '', alertes = '';
+    var fiches = '', alertes = '', forte = '';
 
     // ⭐ Le piège d'un tableau de bord refait chaque matin : quand la tâche ne tourne pas,
     // la page s'affiche normalement avec les chiffres de la veille, et ne dit rien. Hors
@@ -321,6 +321,17 @@
     // se voit pas. C'est précisément ce qu'on veut apprendre en ouvrant le matin.
     var s = d.technique;
     if (s) {
+      // AVANT les fiches, et en relief : depuis que les mises à jour du moteur sont
+      // manuelles, plus rien ne les annonce. Sous les six fiches, sur un téléphone, la
+      // ligne se lirait six mois plus tard — c'est-à-dire jamais.
+      if (s.maj && s.maj.retard) {
+        forte += '<div class="alerte-ligne forte">' + picto('telech')
+          + '<div><div class="a-txt">Container engine ' + e(s.maj.publiee)
+          + ' is out — ' + e(s.maj.installee) + ' installed</div><div class="a-det">'
+          + (s.maj.paru ? 'published ' + e(s.maj.paru) + '. ' : '')
+          + 'Updates are manual: install it at a chosen moment, it restarts every container.'
+          + '</div></div></div>';
+      }
       (s.services || []).filter(function (c) { return c.etat !== 'running'; })
         .forEach(function (c) {
           alertes += '<div class="alerte-ligne">' + picto('boite') + '<div><div class="a-txt">'
@@ -347,8 +358,8 @@
       });
     }
 
-    if (!fiches && !alertes) return '';      // nothing to sum up: no heading either
-    return (fiches ? '<div class="essentiel-grille">' + fiches + '</div>' : '') + alertes;
+    if (!fiches && !alertes && !forte) return '';   // nothing to sum up: no heading either
+    return forte + (fiches ? '<div class="essentiel-grille">' + fiches + '</div>' : '') + alertes;
   }
 
   function site(s) {

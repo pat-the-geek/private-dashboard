@@ -92,6 +92,13 @@ h2:first-of-type { margin-top: 1rem; }
                     margin-top: 0.12rem; }
 .alerte-ligne .a-txt { font-size: 0.88rem; font-weight: 600; line-height: 1.35; }
 .alerte-ligne .a-det { font-size: 0.75rem; font-weight: 400; color: var(--faible); margin-top: 0.1rem; }
+/* Une alerte qu'on doit voir du premier coup d'œil : bord et fond plus affirmés que les
+   autres. Réservé à ce qui n'est annoncé par personne d'autre — une version du moteur de
+   conteneurs, depuis que ses mises à jour sont manuelles. */
+.alerte-ligne.forte { border-left-width: 4px; border-left-color: var(--accent-clair);
+                      background: #241B10; }
+.alerte-ligne.forte .a-txt { color: var(--accent-clair); }
+
 @media (max-width: 340px) { .essentiel-grille { grid-template-columns: 1fr; } }
 
 /* ── Tuiles de chiffres ──────────────────────────────────────────────────── */

@@ -705,6 +705,51 @@ def moteur() -> dict | None:
     return d
 
 
+def maj_moteur(c) -> dict | None:
+    """Is the installed engine the newest one published?
+
+    Left to itself, the engine's own application installs its updates and restarts the
+    virtual machine under us. Told not to, it stops saying anything at all: nothing then
+    tells you a version is out, and a machine in production quietly falls months behind.
+    So we ask ourselves — and only if `maj_moteur` is configured, since this is the one
+    figure here that needs the outside world.
+
+    `flux` is the update feed its own updater reads (RSS, Sparkle-flavoured);
+    `app` is the bundle whose Info.plist holds the installed version.
+    """
+    if not c:
+        return None
+    import plistlib
+    import urllib.request
+    installee = None
+    try:
+        # plistlib rather than `defaults`: the file is read as a file, on any machine.
+        with open(vers_chemin(c["app"]) / "Contents" / "Info.plist", "rb") as f:
+            installee = plistlib.load(f).get("CFBundleShortVersionString")
+    except Exception as exc:
+        print(f"  engine version: unreadable ({exc})")
+    publiee, paru = None, None
+    try:
+        req = urllib.request.Request(c["flux"], headers={"User-Agent": "dashboard/1.0"})
+        with urllib.request.urlopen(req, timeout=12) as rep:
+            flux = rep.read(200_000).decode("utf-8", "replace")
+        # The feed is ordered newest first: the first match is the one we want.
+        m = re.search(r'shortVersionString="([\d.]+)"', flux)
+        publiee = m.group(1) if m else None
+        d = re.search(r"<pubDate>([^<]+)</pubDate>", flux)
+        paru = d.group(1)[:10] if d else None
+    except Exception as exc:
+        print(f"  engine version: feed unreachable ({exc})")
+    if not installee or not publiee:
+        return None
+
+    def rang(v: str) -> tuple:
+        return tuple(int(n) for n in re.findall(r"\d+", v))
+
+    return {"installee": installee, "publiee": publiee, "paru": paru,
+            "retard": rang(publiee) > rang(installee)}
+
+
 def technique() -> dict | None:
     c = CONFIG.get("technique") or {}
     if not c:
@@ -713,7 +758,8 @@ def technique() -> dict | None:
          "disques": disques(c.get("disques") or []),
          "fraicheur": fraicheur(c.get("fraicheur") or []),
          "sondes": sondes(c.get("sondes") or []),
-         "moteur": moteur()}
+         "moteur": moteur(),
+         "maj": maj_moteur(c.get("maj_moteur"))}
     return d if any(d.values()) else None
 
 

@@ -208,6 +208,7 @@ optional `technique` section answers *is it still running*, rather than *how man
 | `disques[]` | `nom` and `chemin` → space left, as a gauge |
 | `fraicheur[]` | `nom`, `fichier`, `heures` → how old the file is against the age you allow |
 | `sondes[]` | `nom`, `url` → one GET, its status code and how long it took |
+| `maj_moteur` | `flux`, `app` → is the installed container engine the newest published? |
 
 ⭐ **`fraicheur` is the one that earns its place.** A scheduled task that fails in silence
 leaves no trace anyone reads; it shows up here, because a file stops getting younger. Point
@@ -217,8 +218,21 @@ path may contain a wildcard, and the most recent match is taken.
 A restart count that climbs is the other symptom nobody watches: the service answers, so
 everything looks fine, while it dies and comes back several times an hour.
 
+The engine's own uptime is read too, next to the machine's. An engine younger than the
+machine restarted on its own — to install an update of its application, for instance — which
+takes every container down and brings it back in seconds, saying nothing. You would otherwise
+meet it later as a memory figure that halved overnight.
+
+⭐ **`maj_moteur` is for a machine told not to update itself.** Turning off automatic updates
+stops the restarts, and also stops anything telling you a version is out: a server quietly
+falls months behind. Point `flux` at the update feed the engine's own updater reads and `app`
+at the bundle holding the installed version, and the comparison is made once a day. It is the
+only figure here that reaches the outside world — left out, no request is made and nothing is
+claimed.
+
 Anything wrong is repeated at the top of the page, under **At a glance** — buried at the
-bottom, a dead container is not seen.
+bottom, a dead container is not seen. A new engine version is placed **above** even those:
+nothing else announces it.
 
 ### The App Store Connect key
 

@@ -76,6 +76,8 @@
         "nom": "Site",
         "url": "https://example.test/"
       }
-    ]
+    ],
+    "_maj_moteur": "Optional, and the only figure here that reaches the outside world: is the installed container engine the newest one published? Worth it where its application no longer installs its own updates — told not to, it also stops saying that a version is out. « flux » is the update feed its updater reads, « app » the bundle whose Info.plist holds the installed version. Absent, no request is made and nothing is claimed.",
+    "maj_moteur": null
   }
 }
