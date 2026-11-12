@@ -750,6 +750,24 @@ def maj_moteur(c) -> dict | None:
             "retard": rang(publiee) > rang(installee)}
 
 
+def recettes_classees(recettes) -> list[dict]:
+    """Revenue per currency, the one you read every day first.
+
+    Ordered by the plain number, the weakest currency leads: 1 759 CLP — one and a half
+    francs — stood in large type in front of 17.58 CHF, and the card read like a good day.
+    Nothing is converted here, since currencies are never mixed; the reference currency
+    simply comes first, and the others keep their order behind it, largest number first.
+
+    No reference configured: unchanged, largest number first.
+    """
+    ordre = [{"monnaie": k, "montant": round(v, 2)} for k, v in recettes.most_common() if k]
+    reference = (_APPSTORE.get("monnaie") or "").strip().upper()
+    if reference:
+        # Stable sort on a single test: only the reference currency moves, the rest keeps rank.
+        ordre.sort(key=lambda r: r["monnaie"].upper() != reference)
+    return ordre
+
+
 def technique() -> dict | None:
     c = CONFIG.get("technique") or {}
     if not c:
@@ -828,7 +846,7 @@ def appstore() -> dict:
             "maj": cumul[i]["maj"], "achats": cumul[i]["achats"],
             "pays": [{"code": k, "n": v} for k, v in pays[i].most_common(6)],
         } for i in APPS],
-        "recettes": [{"monnaie": k, "montant": round(v, 2)} for k, v in recettes.most_common() if k],
+        "recettes": recettes_classees(recettes),
         "appareils": [{"nom": k, "n": v} for k, v in appareils.most_common()],
         "serie": [{"jour": j,
                    **{APPS[i]: par_jour[j].get(i + ":neufs", 0) for i in APPS},

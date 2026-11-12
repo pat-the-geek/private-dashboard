@@ -136,7 +136,7 @@ are worth nothing.
 | **Apps** | grouped by **Apple Identifier**, never by title — an app renamed along the way would be counted twice |
 | **Installs** | first downloads only. Re-downloads and updates are counted separately |
 | **In-app purchases** | attached to their app by the **SKU**, which the row carries in `Parent Identifier` — not by the identifier, which is the purchase's own |
-| **Revenue** | summed **per currency**, never across currencies |
+| **Revenue** | summed **per currency**, never across currencies. `appstore.monnaie` puts the one you read every day first: ordered by the plain number, a weak currency leads — 1 759 CLP, worth a franc and a half, stood in large type in front of 17.58 CHF |
 | **Versions** | all platforms together: Apple's reports do not tell them apart |
 | **Something that answers wrong** | a 4xx or 5xx on a page URL. Scanners counted apart; a code from a robot and one from a human are never mixed |
 | **Two spellings of one page** | counted together (`/p` and `/p.html`, a directory and its `index.html`), displayed under the spelling seen most often |

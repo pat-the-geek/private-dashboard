@@ -43,6 +43,8 @@
   ],
   "appstore": {
     "_cle": "App Store Connect key with the Sales role. The .p8 must sit next to the .env file, named AuthKey_<KEY_ID>.p8. It never leaves the machine.",
+    "_monnaie": "Optional: the currency you read every day, shown first on the revenue card. Amounts are NEVER converted or summed — Apple pays each country in its own currency — but ordered by the plain number the weakest one leads, and a sale of 1759 in a low-unit currency stands in large type in front of a far larger amount. Absent, the largest number leads.",
+    "monnaie": null,
     "env": "~/.appstore/ventes.env",
     "rapports": "logs/appstore",
     "apps": [
