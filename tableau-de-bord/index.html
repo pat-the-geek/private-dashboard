@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=6">
+<link rel="stylesheet" href="/style.css?v=7">
 </head>
 <body>
 <div class="enveloppe">
@@ -996,13 +996,18 @@
     });
     var vivants = d.ouverts || [];
     if (vivants.length) {
-      h += '<div class="carte"><h3>Open right now</h3><table class="pt-table">';
+      // ⚠️ PAS un tableau. À quatre colonnes sur un téléphone, l'identifiant passait à la
+      // ligne, « vitrine » se coupait en « vitrin / e » et le bouton affichait « Clos / e ».
+      // Le tableau de bord se lit d'abord sur un écran de six centimètres.
+      h += '<div class="carte"><h3>Open right now</h3>';
       vivants.forEach(function (o) {
-        h += '<tr><td><code>' + e(o.id) + '</code></td><td>' + e(o.mode) + '</td>'
-          + '<td>' + e(o.expire) + (o.echu ? ' · <b>expired</b>' : '') + '</td>'
-          + '<td><button type="button" class="pt-fermer" data-id="' + e(o.id) + '">Close</button></td></tr>';
+        h += '<div class="pt-ouvert"><code>' + e(o.id) + '</code>'
+          + '<div class="pt-ligne"><span class="sous">' + e(o.mode) + ' · until ' + e(o.expire)
+          + (o.echu ? ' · <b>expired</b>' : '') + '</span>'
+          + '<button type="button" class="pt-fermer" data-id="' + e(o.id) + '">Close</button>'
+          + '</div></div>';
       });
-      h += '</table><p class="note">Closing removes the key: the share shuts at once, '
+      h += '<p class="note">Closing removes the key: the share shuts at once, '
         + 'without a deployment.</p></div>';
     }
     zonePartages.innerHTML = h;

@@ -173,7 +173,7 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
    not a figure: hence buttons, and a link box built to be copied rather than read. */
 #partages:empty { display: none; }
 .pt-doc .sous { margin-bottom: .75rem; }
-.pt-doc button, .pt-table button, .pt-depot button {
+.pt-doc button, .pt-ouvert button, .pt-depot button {
   font: inherit;
   font-size: .82rem;
   color: var(--bg);
@@ -182,8 +182,10 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
   border-radius: 6px;
   padding: .45rem .9rem;
   cursor: pointer;
+  /* ⛔ Un bouton ne se coupe pas en deux : « Clos / e », vu sur un téléphone. */
+  white-space: nowrap;
 }
-.pt-doc button[disabled], .pt-table button[disabled], .pt-depot button[disabled]
+.pt-doc button[disabled], .pt-ouvert button[disabled], .pt-depot button[disabled]
   { opacity: .45; cursor: default; }
 .pt-resultat:not(:empty) { margin-top: .9rem; }
 
@@ -214,10 +216,18 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
   color: var(--accent) !important;
   border: 1px solid var(--border) !important;
 }
-.pt-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-.pt-table td { padding: .45rem .4rem; border-top: 1px solid var(--border); vertical-align: middle; }
-.pt-table td:first-child code { font-size: .74rem; }
-.pt-table td:last-child { text-align: right; }
+/* Un partage ouvert : l'identifiant sur sa ligne, puis l'état et le bouton côte à côte.
+   ⚠️ Surtout pas un tableau — voir le commentaire du balisage. */
+.pt-ouvert { padding: .7rem 0; border-top: 1px solid var(--border); }
+.pt-ouvert code { display: block; font-size: .74rem; word-break: break-all; color: var(--muted); }
+.pt-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .35rem;
+}
+.pt-ligne .sous { margin: 0; }
 .note.erreur { color: var(--rouge); }
 
 /* Le dépôt d'un document : un formulaire court, qui ne doit pas avoir l'air d'un formulaire. */
