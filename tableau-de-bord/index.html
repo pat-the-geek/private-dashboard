@@ -1064,8 +1064,11 @@
   // re-read what the morning task had produced. The recomputation is an optional service
   // (see nginx.conf); where it is not installed, /recalculer answers 404 or 502 and the
   // button re-reads the figures, as before.
+  // ⚠️ ↻ rafraîchit AUSSI la rubrique des partages : c'est le geste qu'on fait quand on veut
+  // que tout soit à jour, et s'il ne remettait que les chiffres, on croirait la liste exacte.
   function recalculer() {
     if (enCours) return;
+    chargerPartages();
     if (bouton) bouton.classList.add('tourne');
     var quand = document.getElementById('quand');
     var echec = null;

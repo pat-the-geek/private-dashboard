@@ -12,7 +12,7 @@
  * cache ne sert que de filet. La feuille porte une empreinte ?v=N : son adresse change avec
  * elle, le cache ne peut pas mentir.
  */
-var CACHE = 'tdb-1';
+var CACHE = 'tdb-2';   // ⚠️ à changer dès qu'une réponse ne doit plus être servie d'avant
 var SOCLE = ['/', '/index.html', '/style.css?v=3', '/icone.svg', '/icone-180.png',
              '/icone-512.png', '/manifest.webmanifest'];
 
@@ -55,6 +55,11 @@ self.addEventListener('fetch', function (ev) {
   var u = new URL(req.url);
   if (u.origin !== self.location.origin) return;
   if (u.pathname === '/etat-recalcul') return;            // un état n'a pas de passé
+  // ⛔ **Ce qui est partagé MAINTENANT n'a pas de passé non plus.** Sans cette ligne, la
+  // première réponse de /partages était mise en cache puis servie en priorité à chaque
+  // ouverture : la page a rejoué « file not found » longtemps après que le fichier fut en
+  // place, et le réseau n'était même plus consulté. Constaté le 15/11/2026.
+  if (u.pathname === '/partages') return;
   // Les chiffres : le réseau fait foi, le cache est le filet.
   if (u.pathname === '/donnees.json') {
     ev.respondWith(reseauDAbord(ev, true));
