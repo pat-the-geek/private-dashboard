@@ -380,6 +380,15 @@ it in a click, and it appears only when the service behind it answers.
 **Open right now** lists what is live: title, identifier, mode, the day it was opened and the
 day it closes. Shares opened before this list carried titles show their identifier alone.
 
+**Copy link** puts the share's public address on the clipboard, so it can be sent without being
+retyped. It needs `base` in the configuration — the public address of the site that serves the
+shares — because that address cannot live in the page itself.
+
+⚠️ For a **confidential** share, the public link shows the card and nothing else. What opens the
+document is the presentation link, and it **cannot be rebuilt**: only the fingerprint of its
+secret is kept, never the secret. Shown once when the share was opened; lost, the share has to
+be closed and reopened. The list says so under each confidential entry.
+
 Run the service on the host, and relay it like the recomputation one (both are already in
 `nginx.conf`):
 

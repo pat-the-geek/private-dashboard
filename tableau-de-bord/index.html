@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=12">
+<link rel="stylesheet" href="/style.css?v=14">
 </head>
 <body>
 <div class="enveloppe">
@@ -1157,12 +1157,24 @@
         // ni quand. Les partages d'avant n'en ont pas — l'identifiant tient alors ce rôle.
         var quand = (o.cree ? 'opened ' + e(o.cree) + ' · ' : '')
           + 'until ' + e(o.expire || '—') + (o.echu ? ' · <b>expired</b>' : '');
+        // ⚠️ Le bouton copie le lien PUBLIC. Pour un partage confidentiel, c'est la page
+        // seule : le lien de présentation ne se reconstruit pas — seule l'empreinte du secret
+        // est gardée, jamais le secret. On le dit, plutôt que de laisser envoyer un lien qui
+        // n'ouvrira rien chez le destinataire.
+        var confidentiel = o.mode === 'confidentiel';
         h += '<div class="pt-ouvert">'
           + (o.titre ? '<b class="pt-titre">' + e(o.titre) + '</b>' : '')
           + '<code>' + e(o.id) + '</code>'
           + '<div class="pt-ligne"><span class="sous">' + e(o.mode) + ' · ' + quand + '</span>'
+          + '<span class="pt-actions">'
+          + (o.lien ? '<button type="button" class="pt-copier" data-lien="' + e(o.lien)
+              + '">Copy link</button>' : '')
           + '<button type="button" class="pt-fermer" data-id="' + e(o.id) + '">Close</button>'
-          + '</div></div>';
+          + '</span></div>'
+          + (o.lien && confidentiel
+              ? '<p class="note">The public link shows the card only. What opens the document is '
+                + 'the presentation link, shown once when the share was opened.</p>' : '')
+          + '</div>';
       });
       h += '<p class="note">Closing removes the key: the share shuts at once, '
         + 'without a deployment.</p></div>';
@@ -1184,10 +1196,34 @@
     if (!b) return;
 
     if (b.classList.contains('pt-copier')) {
-      navigator.clipboard.writeText(b.dataset.lien).then(function () {
-        b.textContent = 'Copied';
-        setTimeout(function () { b.textContent = 'Copy'; }, 2000);
-      });
+      // ⚠️ `navigator.clipboard` n'est pas toujours accordé — page non sécurisée, réglage du
+      // navigateur, refus de l'utilisateur. Sans repli, le bouton ne faisait RIEN et ne le
+      // disait pas. On retombe sur la vieille méthode, puis on avoue l'échec.
+      var original = b.dataset.libelle || b.textContent;
+      b.dataset.libelle = original;
+      var dire = function (mot) {
+        b.textContent = mot;
+        setTimeout(function () { b.textContent = b.dataset.libelle; }, 2000);
+      };
+      var repli = function () {
+        var z = document.createElement('textarea');
+        z.value = b.dataset.lien;
+        z.setAttribute('readonly', '');
+        z.style.position = 'fixed';
+        z.style.opacity = '0';
+        document.body.appendChild(z);
+        z.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(z);
+        dire(ok ? 'Copied' : 'Press ⌘C');
+        if (!ok) window.prompt('Copy this link:', b.dataset.lien);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(b.dataset.lien).then(function () { dire('Copied'); }, repli);
+      } else {
+        repli();
+      }
       return;
     }
 

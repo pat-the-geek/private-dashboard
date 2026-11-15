@@ -229,11 +229,17 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
 .pt-ligne {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: .75rem;
   margin-top: .35rem;
+  /* ⚠️ Deux boutons et une date dans 375 points : sans ce retour à la ligne, la date se
+     coupait en trois et les boutons se chevauchaient presque. Ils descendent d'un cran. */
+  flex-wrap: wrap;
 }
+.pt-ligne .sous { flex: 1 1 10rem; }
 .pt-ligne .sous { margin: 0; }
+/* Les deux boutons d'un partage ouvert restent ensemble, et passent à la ligne d'un bloc. */
+.pt-actions { display: flex; gap: .4rem; flex: none; margin-left: auto; }
+.pt-ouvert .note { margin-top: .4rem; }
 .note.erreur { color: var(--rouge); }
 
 /* Le dépôt d'un document : un formulaire court, qui ne doit pas avoir l'air d'un formulaire. */
