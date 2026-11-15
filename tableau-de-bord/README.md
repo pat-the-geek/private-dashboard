@@ -410,16 +410,27 @@ it starts, set `PARTAGES_SOURCES` to move it — shared straight away, and kept 
 takes it out of the list; the file itself stays, because a misplaced click should not delete
 something you uploaded by hand.
 
-⭐ **`PARTAGES_SOURCES` may point at an external disk**, and that is the one folder worth
-moving there: a share expires and is removed, a source document stays. Keys and the published
-folder are better left on the internal disk — a few hundred bytes for the first, and the
-second is where the web server reads from.
+`PARTAGES_SOURCES` **can** point at an external disk — it is the one folder of the four worth
+moving there, since a share expires and is removed while a source document stays. Keys and the
+published folder are better left on the internal disk: a few hundred bytes for the first, and
+the second is where the web server reads from.
+
+⛔ **On macOS, read this before you try.** A background agent touching `/Volumes` triggers a
+*Removable Volumes* consent request for the interpreter. With nobody at that machine's screen
+to answer it, the call blocks **in the kernel**: the process lives, nothing listens on the
+port, and the log stays empty — a silent outage, which is worse than an error. The same call
+answers instantly from an SSH session, because the shell there already has full disk access, so
+a quick test will not reveal it. To use an external disk, grant the interpreter itself access
+in System Settings → Privacy & Security first, and weigh what that means: every script run
+with that interpreter gains it, and the setting has been known to reset on an OS upgrade.
 
 - ⛔ **A folder under `/Volumes` is not written blind.** If the service starts before the disk
   is mounted — the normal order at login — then creating the folder would make a *real*
   directory on the internal disk; the disk, arriving afterwards, mounts as `/Volumes/<name> 1`,
   and uploads land in the decoy with nothing to show it. The service therefore refuses to
   write until the volume is a genuine mount point, and says so with a 503.
+- **A folder that does not answer within 3 seconds is given up on**, and the reason is logged
+  and returned. The service starts, serves, and says what is missing.
 - The registry keeps an uploaded document as `$PARTAGES_SOURCES/<name>`, so moving the folder
   later does not invalidate it.
 
