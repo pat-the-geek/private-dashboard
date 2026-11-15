@@ -23,7 +23,12 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 16px/1.55 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Helvetica, sans-serif;
-  padding: max(env(safe-area-inset-top), 0px) max(env(safe-area-inset-right), 0px)
+  /* ⚠️ **La zone sûre ne suffit pas sur un téléphone pliant sous sa coque.** La coque
+     recouvre le haut de l'écran extérieur : le titre et la première carte passent dessous, et
+     iOS n'en dit rien aux pages — « --coque » est donc réglée à la main, par appareil, dans le
+     menu. Zéro partout ailleurs, et rien ne change. */
+  padding: calc(max(env(safe-area-inset-top), 0px) + var(--coque, 0px))
+           max(env(safe-area-inset-right), 0px)
            calc(env(safe-area-inset-bottom) + 2.5rem) max(env(safe-area-inset-left), 0px);
   -webkit-font-smoothing: antialiased;
 }
@@ -268,4 +273,79 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
   background: transparent !important;
   color: var(--muted) !important;
   border: 1px solid var(--border) !important;
+}
+
+/* ─────────────────────────── Le menu des parties ───────────────────────────
+   Onze sections à la file se parcourent au pouce pendant dix secondes avant d'arriver au
+   chiffre qu'on venait voir. Quatre parties, et un menu pour choisir. */
+#menu {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+#menu svg { width: 18px; height: 18px; }
+#menu:active, #menu[aria-expanded="true"] { background: var(--surface-2); color: var(--text); }
+/* ⚠️ Le bouton du menu prend la marge automatique ; ↻ ne doit donc plus la porter, sinon les
+   deux se repoussent et le second part à droite tout seul. */
+#menu + #refaire { margin-left: .5rem; }
+
+/* ⛔ `display: flex` l'emporte sur l'attribut `hidden` du navigateur : sans cette première
+   règle, le panneau restait ouvert après le choix — l'attribut était bien posé, et sans effet. */
+#choix[hidden] { display: none; }
+#choix {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .4rem;
+  margin-bottom: 1.1rem;
+}
+#choix button {
+  font: inherit;
+  font-size: .95rem;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  padding: .6rem .75rem;
+  cursor: pointer;
+}
+#choix button:active { background: var(--surface-2); }
+#choix button.on { color: var(--bg); background: var(--accent); font-weight: 600; }
+
+/* Le réglage de la marge de coque, au bas du menu. Propre à l'appareil : la coque est celle de
+   CE téléphone, elle n'a rien à faire dans une configuration partagée. */
+.coque {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .35rem;
+  padding: .55rem .75rem 0;
+  border-top: 1px solid var(--border);
+  font-size: .78rem;
+  color: var(--muted);
+}
+.coque span { flex: 1; }
+.coque b { color: var(--text); font-variant-numeric: tabular-nums; min-width: 2.6rem; text-align: right; }
+.coque button {
+  font: inherit;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
 }

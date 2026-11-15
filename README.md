@@ -123,6 +123,33 @@ eras. With the optional recomputation service on the host (`127.0.0.1:8091`, rel
 
 ---
 
+## Four parts, and a menu
+
+Eleven sections in a row means ten seconds of thumb before reaching the figure you came for.
+The page is therefore split, and the ☰ button picks a part:
+
+| Part | What it holds |
+|---|---|
+| **Overview** | the glance tiles, and the machine's own health |
+| **Audience** | visitors, what answers wrong, what people take away, indexing, Mastodon |
+| **App Store** | exits, funnel, sales, products, version history |
+| **Shares** | the sharing section, when its service is installed |
+
+The menu offers **only the parts that have something to show**: a partial configuration gives
+a shorter menu, never an empty screen. With a single part, the button disappears altogether.
+The chosen part lands in the address (`#audience`), so a reload — or a shortcut on the home
+screen — comes back to it.
+
+### Top margin for a case
+
+⚠️ **A folding phone's case covers the top of its outer screen**, and iOS does not tell pages
+about it: the safe area does not cover this. The title and the first card slide underneath.
+The menu therefore carries a **Top margin for a case** setting, 0 to 40 points.
+
+Four points are enough with Apple's own case — the same value the companion app settled on.
+It is **per device**, kept in that browser: the case belongs to that phone, not to a
+configuration every screen shares. It stays at 0 everywhere else, and nothing moves.
+
 ## How the figures are counted
 
 These rules matter more than the figures themselves: two sources that contradict each other
