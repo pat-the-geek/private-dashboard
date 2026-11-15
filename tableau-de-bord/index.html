@@ -1162,7 +1162,9 @@
         // est gardée, jamais le secret. On le dit, plutôt que de laisser envoyer un lien qui
         // n'ouvrira rien chez le destinataire.
         var confidentiel = o.mode === 'confidentiel';
-        h += '<div class="pt-ouvert">'
+        // Les attributs portent de quoi retirer la ligne sans la relire, et repérer les échus.
+        h += '<div class="pt-ouvert" data-id="' + e(o.id) + '"'
+          + (o.echu ? ' data-echu="1"' : '') + '>'
           + (o.titre ? '<b class="pt-titre">' + e(o.titre) + '</b>' : '')
           + '<code>' + e(o.id) + '</code>'
           + '<div class="pt-ligne"><span class="sous">' + e(o.mode) + ' · ' + quand + '</span>'
@@ -1176,10 +1178,25 @@
                 + 'the presentation link, shown once when the share was opened.</p>' : '')
           + '</div>';
       });
+      // ⚠️ Un partage échu n'ouvre plus rien — mais son dossier reste SERVI, et le chiffré
+      // reste téléchargeable. Le refermer retire la clé et le dossier.
+      var nbEchus = vivants.filter(function (o) { return o.echu; }).length;
+      if (nbEchus) {
+        h += '<p class="pt-ligne"><span class="sous">' + nbEchus + ' expired — their folder is '
+          + 'still served</span><span class="pt-actions">'
+          + '<button type="button" class="pt-nettoyer">Close expired</button></span></p>';
+      }
       h += '<p class="note">Closing removes the key: the share shuts at once, '
         + 'without a deployment.</p></div>';
     }
     zonePartages.innerHTML = h;
+  }
+
+  function fermer(id) {
+    return fetch('/refermer', {
+      method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    }).then(function (r) { return r.ok; }).catch(function () { return false; });
   }
 
   function chargerPartages() {
@@ -1310,9 +1327,27 @@
 
     if (b.classList.contains('pt-fermer')) {
       b.disabled = true;
-      fetch('/refermer', { method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
-                           body: JSON.stringify({ id: b.dataset.id }) })
-      .then(chargerPartages).catch(function () { b.disabled = false; });
+      fermer(b.dataset.id).then(function (ok) {
+        // ⚠️ La ligne part TOUT DE SUITE : attendre la relecture laissait un partage révoqué
+        // à l'écran, et on ne sait plus si le clic a porté.
+        if (ok) { var l = b.closest('.pt-ouvert'); if (l) l.remove(); }
+        else { b.disabled = false; }
+        chargerPartages();
+      });
+      return;
+    }
+
+    if (b.classList.contains('pt-nettoyer')) {
+      b.disabled = true;
+      b.textContent = 'Closing…';
+      var echus = [].map.call(document.querySelectorAll('.pt-ouvert[data-echu="1"]'),
+        function (l) { return l.dataset.id; });
+      // Un par un : le service n'accepte qu'un ordre à la fois, et un échec isolé ne doit pas
+      // emporter les autres.
+      echus.reduce(function (suite, id) {
+        return suite.then(function () { return fermer(id); });
+      }, Promise.resolve()).then(chargerPartages);
+      return;
     }
   });
 
