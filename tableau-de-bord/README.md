@@ -372,9 +372,10 @@ it in a click, and it appears only when the service behind it answers.
 - `mode` is `vitrine` (the page shows the code) or `confidentiel` (only the presentation
   link obtains one), `expire` a number of days.
 - `description` is optional: left out, the first paragraph of the document is used.
-- `type` is `markdown` (read in the companion app, through the QR code) or `fichier`
-  (**downloaded from the page**, decrypted in the browser by WebCrypto). Left out, the
-  extension decides. A file share shows no QR code and involves no app at all.
+- `type` is `markdown` or `fichier`. Left out, the extension decides. Both are opened the same
+  way — through the QR code, by the companion app, which decrypts on the device. A file is
+  **saved** rather than displayed, and its name travels inside the encrypted payload rather
+  than on the public page.
 - `langue` (`fr` or `en`) is the language the **page** opens in. ⭐ It is the language of the
   *document*, and it wins over whatever the reader last picked elsewhere on the site: an
   English frame around a French document serves nobody. The FR/EN buttons still work, and
