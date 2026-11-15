@@ -140,6 +140,19 @@ a shorter menu, never an empty screen. With a single part, the button disappears
 The chosen part lands in the address (`#audience`), so a reload — or a shortcut on the home
 screen — comes back to it.
 
+### Back to top
+
+A part can run several screens. The round button at the bottom right returns to the top — and
+to the menu — in one tap. It is **always there**, not revealed by scrolling: a button that
+appears only once you have scrolled is a button nobody knows exists.
+
+It is drawn as glass: what passes underneath shows through, the rim catches the light, and a
+shadow lifts it off the page. Where `backdrop-filter` is not supported, it falls back to a
+plain surface rather than an unreadable transparent disc.
+
+Changing part also returns to the top: going from a long part to a short one would otherwise
+leave the screen in the middle of the second, and it would look empty.
+
 ### Top margin for a case
 
 ⚠️ **A folding phone's case covers the top of its outer screen**, and iOS does not tell pages

@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=9">
+<link rel="stylesheet" href="/style.css?v=10">
 </head>
 <body>
 <div class="enveloppe">
@@ -56,6 +56,15 @@
   Private network — this dashboard is not reachable from the internet.<br>
   Figures rebuilt by the morning task.
 </footer>
+
+<!-- Remonter. Une partie fait plusieurs écrans : sans ce bouton, revenir au menu demande de
+     remonter au pouce tout ce qu'on vient de descendre. Toujours visible — un bouton qui
+     apparaît au défilement, on ne sait pas qu'il existe tant qu'on n'a pas défilé. -->
+<button id="haut" type="button" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</button>
 </div>
 
 <script>
@@ -899,6 +908,9 @@
       b.classList.toggle('on', b.dataset.cle === cle);
     });
     try { localStorage.setItem('tdb-partie', cle); } catch (e) {}
+    // ⚠️ Sans cela, passer d'une partie longue à une partie courte laisse l'écran au milieu
+    // de la seconde — on croit qu'elle est vide parce qu'on en voit la fin.
+    window.scrollTo(0, 0);
     if (location.hash.slice(1) !== cle) {
       try { history.replaceState(null, '', '#' + cle); } catch (e) {}
     }
@@ -960,6 +972,11 @@
       fermerMenu();
     }
   });
+  // ─────────────────────────── Remonter ───────────────────────────
+  document.getElementById('haut').addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   window.addEventListener('hashchange', function () {
     var cle = location.hash.slice(1);
     if (cle && cle !== partieCourante) montrer(cle);
