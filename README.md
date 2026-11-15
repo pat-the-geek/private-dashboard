@@ -343,8 +343,8 @@ python3 scripts/partage-tableau-de-bord.py --port 8092
 ### Adding a document from the page
 
 The section also takes a **Markdown file picked from the device you are reading on**: it is
-written to the host — by default `~/Developer/partages-sources/`, set `PARTAGES_SOURCES`
-to move it — shared straight away, and kept in the list for next time. *Remove from list*
+written to the host — by default `~/Developer/partages-sources/`, created by the service when
+it starts, set `PARTAGES_SOURCES` to move it — shared straight away, and kept in the list for next time. *Remove from list*
 takes it out of the list; the file itself stays, because a misplaced click should not delete
 something you uploaded by hand.
 
