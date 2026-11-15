@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=10">
+<link rel="stylesheet" href="/style.css?v=12">
 </head>
 <body>
 <div class="enveloppe">
@@ -1128,7 +1128,10 @@
       + '<input type="text" id="pt-titre" placeholder="Title (read from the document if empty)">'
       + '<select id="pt-mode"><option value="vitrine">vitrine</option>'
       + '<option value="confidentiel">confidentiel</option></select>'
-      + '<input type="number" id="pt-expire" value="30" min="0" max="3650" aria-label="Days">'
+      // ⚠️ Un champ qui ne contient que « 30 » ne dit pas 30 QUOI. L'unité se lit à côté du
+      // chiffre, pas seulement dans un aria-label que personne ne voit.
+      + '<span class="pt-unite"><input type="number" id="pt-expire" value="30" min="0" max="3650"'
+      + ' aria-label="Days before the share closes"><em>days</em></span>'
       + '</div>'
       + '<button type="button" class="pt-deposer">Upload and share</button>'
       + '<div class="pt-resultat"></div></div>';
@@ -1150,9 +1153,14 @@
       // Le tableau de bord se lit d'abord sur un écran de six centimètres.
       h += '<div class="carte"><h3>Open right now</h3>';
       vivants.forEach(function (o) {
-        h += '<div class="pt-ouvert"><code>' + e(o.id) + '</code>'
-          + '<div class="pt-ligne"><span class="sous">' + e(o.mode) + ' · until ' + e(o.expire)
-          + (o.echu ? ' · <b>expired</b>' : '') + '</span>'
+        // Le titre d'abord : une liste d'identifiants en base64 ne dit ni ce qu'on a ouvert
+        // ni quand. Les partages d'avant n'en ont pas — l'identifiant tient alors ce rôle.
+        var quand = (o.cree ? 'opened ' + e(o.cree) + ' · ' : '')
+          + 'until ' + e(o.expire || '—') + (o.echu ? ' · <b>expired</b>' : '');
+        h += '<div class="pt-ouvert">'
+          + (o.titre ? '<b class="pt-titre">' + e(o.titre) + '</b>' : '')
+          + '<code>' + e(o.id) + '</code>'
+          + '<div class="pt-ligne"><span class="sous">' + e(o.mode) + ' · ' + quand + '</span>'
           + '<button type="button" class="pt-fermer" data-id="' + e(o.id) + '">Close</button>'
           + '</div></div>';
       });

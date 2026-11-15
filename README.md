@@ -372,6 +372,13 @@ it in a click, and it appears only when the service behind it answers.
 - `mode` is `vitrine` (the page shows the code) or `confidentiel` (only the presentation
   link obtains one), `expire` a number of days.
 - `description` is optional: left out, the first paragraph of the document is used.
+- `langue` (`fr` or `en`) is the language the **page** opens in. ⭐ It is the language of the
+  *document*, and it wins over whatever the reader last picked elsewhere on the site: an
+  English frame around a French document serves nobody. The FR/EN buttons still work, and
+  applying this default writes nothing — only a click is remembered.
+
+**Open right now** lists what is live: title, identifier, mode, the day it was opened and the
+day it closes. Shares opened before this list carried titles show their identifier alone.
 
 Run the service on the host, and relay it like the recomputation one (both are already in
 `nginx.conf`):

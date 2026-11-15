@@ -224,7 +224,8 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
 /* Un partage ouvert : l'identifiant sur sa ligne, puis l'état et le bouton côte à côte.
    ⚠️ Surtout pas un tableau — voir le commentaire du balisage. */
 .pt-ouvert { padding: .7rem 0; border-top: 1px solid var(--border); }
-.pt-ouvert code { display: block; font-size: .74rem; word-break: break-all; color: var(--muted); }
+.pt-titre { display: block; font-size: .95rem; margin-bottom: .1rem; }
+.pt-ouvert code { display: block; font-size: .72rem; word-break: break-all; color: var(--faible); }
 .pt-ligne {
   display: flex;
   align-items: center;
@@ -257,7 +258,23 @@ footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border
 }
 .pt-champs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .pt-champs input[type="text"] { flex: 1 1 14rem; }
-.pt-champs input[type="number"] { width: 5.5rem; }
+/* Le chiffre et son unité forment un seul bloc : « 30 » seul ne dit pas 30 quoi. */
+.pt-unite {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding-right: .6rem;
+}
+.pt-unite em { font-style: normal; font-size: .8rem; color: var(--muted); }
+.pt-champs .pt-unite input[type="number"] {
+  width: 3.6rem;
+  background: transparent;
+  border: none;
+  padding-right: 0;
+}
 .pt-champs input, .pt-champs select {
   font: inherit;
   font-size: .85rem;
