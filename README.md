@@ -368,7 +368,9 @@ it in a click, and it appears only when the service behind it answers.
 ```
 
 - `fichier` is the source document **on the machine that runs the service** — not on your
-  laptop. A relative path is read from the repository root.
+  laptop. A relative path is read from the repository root, `~/…` from the home directory, and
+  `$PARTAGES_SOURCES/…` from the uploads folder below. ⭐ Prefer the last form for a document
+  on an external disk: the volume name is one machine's business, and this file is versioned.
 - `mode` is `vitrine` (the page shows the code) or `confidentiel` (only the presentation
   link obtains one), `expire` a number of days.
 - `description` is optional: left out, the first paragraph of the document is used.
@@ -407,6 +409,19 @@ written to the host — by default `~/Developer/partages-sources/`, created by t
 it starts, set `PARTAGES_SOURCES` to move it — shared straight away, and kept in the list for next time. *Remove from list*
 takes it out of the list; the file itself stays, because a misplaced click should not delete
 something you uploaded by hand.
+
+⭐ **`PARTAGES_SOURCES` may point at an external disk**, and that is the one folder worth
+moving there: a share expires and is removed, a source document stays. Keys and the published
+folder are better left on the internal disk — a few hundred bytes for the first, and the
+second is where the web server reads from.
+
+- ⛔ **A folder under `/Volumes` is not written blind.** If the service starts before the disk
+  is mounted — the normal order at login — then creating the folder would make a *real*
+  directory on the internal disk; the disk, arriving afterwards, mounts as `/Volumes/<name> 1`,
+  and uploads land in the decoy with nothing to show it. The service therefore refuses to
+  write until the volume is a genuine mount point, and says so with a 503.
+- The registry keeps an uploaded document as `$PARTAGES_SOURCES/<name>`, so moving the folder
+  later does not invalidate it.
 
 - The content travels as **text in the JSON body**, not as multipart: a Markdown file is text,
   and a hand-written multipart parser would be the most fragile part of this service.
