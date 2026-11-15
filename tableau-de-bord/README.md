@@ -310,6 +310,60 @@ hours and do the work only when the local hour is the right one.
 
 ---
 
+## 5. Shares, if you hand documents out (optional)
+
+A document you share expires. Reopening it — new identifier, new key, new link — is a
+two-second job that nobody does if it means opening a terminal. The **Shares** section does
+it in a click, and it appears only when the service behind it answers.
+
+```json
+"partages": {
+  "documents": [
+    { "id": "report", "nom": "Quarterly report",
+      "fichier": "~/documents/report.md",
+      "mode": "confidentiel", "expire": 30,
+      "description": "One sentence for the preview card." }
+  ]
+}
+```
+
+- `fichier` is the source document **on the machine that runs the service** — not on your
+  laptop. A relative path is read from the repository root.
+- `mode` is `vitrine` (the page shows the code) or `confidentiel` (only the presentation
+  link obtains one), `expire` a number of days.
+- `description` is optional: left out, the first paragraph of the document is used.
+
+Run the service on the host, and relay it like the recomputation one (both are already in
+`nginx.conf`):
+
+```
+python3 scripts/partage-tableau-de-bord.py --port 8092
+```
+
+### Adding a document from the page
+
+The section also takes a **Markdown file picked from the device you are reading on**: it is
+written to the host — by default `~/Developer/partages-sources/`, set `PARTAGES_SOURCES`
+to move it — shared straight away, and kept in the list for next time. *Remove from list*
+takes it out of the list; the file itself stays, because a misplaced click should not delete
+something you uploaded by hand.
+
+- The content travels as **text in the JSON body**, not as multipart: a Markdown file is text,
+  and a hand-written multipart parser would be the most fragile part of this service.
+- ⛔ **The filename from the browser is never used as a filename.** It is a string chosen by
+  whoever uploads — `../../.ssh/authorized_keys` is one. Only the extension is kept, after
+  being checked, and the name is rebuilt from the title plus a random suffix.
+- `.md`, `.markdown` or `.txt`, 2 MB at most. The relayed location raises nginx's own 1 MB
+  cap, which would otherwise refuse a longer document before this service ever saw it.
+
+⭐ **A share opened here is online at once**, without a deployment: the web server reads the
+published folder live. The folder is not committed, and that is the point — an ephemeral
+document has no business leaving its ciphertext in a repository's history for good.
+
+⛔ **The presentation link is shown once and stored nowhere**: not in the page, not in the
+browser, not in the service's log, which keeps only the identifier and the title. A secret
+in a log file outlives the share it opens.
+
 ## What the dashboard cannot do
 
 - **Install sources** (App Store search, browse, web referrer): they need the Analytics API,

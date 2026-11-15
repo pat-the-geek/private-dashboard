@@ -81,5 +81,7 @@
     ],
     "_maj_moteur": "Optional, and the only figure here that reaches the outside world: is the installed container engine the newest one published? Worth it where its application no longer installs its own updates — told not to, it also stops saying that a version is out. « flux » is the update feed its updater reads, « app » the bundle whose Info.plist holds the installed version. Absent, no request is made and nothing is claimed.",
     "maj_moteur": null
-  }
+  },
+  "_partages": "Optional. Documents you hand out as an encrypted share, listed so the dashboard can open a fresh one in a click — a share expires, and reopening it should not mean opening a terminal. Needs the sharing service on the host (port 8092); without it the section does not appear. « fichier » is the source document on THAT machine, « mode » is vitrine or confidentiel, « expire » a number of days, « description » the one sentence of the preview card (read from the document when left out).",
+  "partages": null
 }

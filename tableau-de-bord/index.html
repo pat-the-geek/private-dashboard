@@ -15,7 +15,7 @@
 <!-- ⚠️ The fingerprint forces the stylesheet to be re-read when it changes: a browser
      holding the old one renders a page of unknown classes, and the SVGs fall back to
      their default size — 300 × 150 pixels. Bump it on every CSS change. -->
-<link rel="stylesheet" href="/style.css?v=4">
+<link rel="stylesheet" href="/style.css?v=6">
 </head>
 <body>
 <div class="enveloppe">
@@ -38,6 +38,10 @@
 </header>
 
 <main id="corps"></main>
+
+<!-- Shares. Filled only when the optional sharing service answers (see nginx.conf); where it
+     is not installed, this stays empty and the page is exactly what it was before. -->
+<div id="partages"></div>
 
 <footer>
   Private network — this dashboard is not reachable from the internet.<br>
@@ -946,6 +950,173 @@
     });
   }
 
+  // ─────────────────────────── Shares ───────────────────────────
+  // A share expires. Reopening one is a two-second job that nobody does if it means opening a
+  // terminal — so it belongs here. The documents come from the configuration, never from this
+  // page: what you share is yours, this file is the product.
+  //
+  // ⛔ The presentation link opens the document. It is shown ONCE, copied, and never stored:
+  // no localStorage, no cache, nothing that would outlive the share it opens.
+  var zonePartages = document.getElementById('partages');
+
+  function lienBoite(titre, lien, avertir) {
+    return '<div class="pt-lien"><span class="pt-etiq">' + e(titre) + '</span>'
+      + '<code>' + e(lien) + '</code>'
+      + '<button type="button" class="pt-copier" data-lien="' + e(lien) + '">Copy</button>'
+      + (avertir ? '<p class="note">Shown once. It opens the document — pass it hand to hand.</p>' : '')
+      + '</div>';
+  }
+
+  function dessinerPartages(d) {
+    var h = '<h2>Shares</h2>';
+    // Déposer un document depuis le disque. Sans cela la liste est celle de la configuration,
+    // et partager une note écrite ce matin demanderait d'éditer un fichier JSON.
+    h += '<div class="carte pt-depot"><h3>Add a document</h3>'
+      + '<p class="sous">A Markdown file from this device. It is kept on the host, outside the '
+      + 'repository, and shared at once.</p>'
+      + '<input type="file" id="pt-fichier" accept=".md,.markdown,.txt">'
+      + '<div class="pt-champs">'
+      + '<input type="text" id="pt-titre" placeholder="Title (read from the document if empty)">'
+      + '<select id="pt-mode"><option value="vitrine">vitrine</option>'
+      + '<option value="confidentiel">confidentiel</option></select>'
+      + '<input type="number" id="pt-expire" value="30" min="0" max="3650" aria-label="Days">'
+      + '</div>'
+      + '<button type="button" class="pt-deposer">Upload and share</button>'
+      + '<div class="pt-resultat"></div></div>';
+    (d.documents || []).forEach(function (doc) {
+      h += '<div class="carte pt-doc" data-id="' + e(doc.id) + '">'
+        + '<h3>' + e(doc.nom) + '</h3>'
+        + '<p class="sous">' + e(doc.mode) + ' · ' + e(doc.expire) + ' days'
+        + (doc.existe ? '' : ' · <b>file not found</b>') + '</p>'
+        + '<button type="button" class="pt-ouvrir"' + (doc.existe ? '' : ' disabled')
+        + '>New share</button>'
+        + (doc.ajoute ? '<button type="button" class="pt-oublier" data-id="' + e(doc.id)
+            + '">Remove from list</button>' : '')
+        + '<div class="pt-resultat"></div></div>';
+    });
+    var vivants = d.ouverts || [];
+    if (vivants.length) {
+      h += '<div class="carte"><h3>Open right now</h3><table class="pt-table">';
+      vivants.forEach(function (o) {
+        h += '<tr><td><code>' + e(o.id) + '</code></td><td>' + e(o.mode) + '</td>'
+          + '<td>' + e(o.expire) + (o.echu ? ' · <b>expired</b>' : '') + '</td>'
+          + '<td><button type="button" class="pt-fermer" data-id="' + e(o.id) + '">Close</button></td></tr>';
+      });
+      h += '</table><p class="note">Closing removes the key: the share shuts at once, '
+        + 'without a deployment.</p></div>';
+    }
+    zonePartages.innerHTML = h;
+  }
+
+  function chargerPartages() {
+    if (!zonePartages) return;
+    fetch('/partages', { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(dessinerPartages)
+    .catch(function () { zonePartages.innerHTML = ''; });   // service absent : rubrique muette
+  }
+
+  zonePartages.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b) return;
+
+    if (b.classList.contains('pt-copier')) {
+      navigator.clipboard.writeText(b.dataset.lien).then(function () {
+        b.textContent = 'Copied';
+        setTimeout(function () { b.textContent = 'Copy'; }, 2000);
+      });
+      return;
+    }
+
+    if (b.classList.contains('pt-ouvrir')) {
+      var carte = b.closest('.pt-doc'), sortie = carte.querySelector('.pt-resultat');
+      b.disabled = true;
+      sortie.innerHTML = '<p class="note">Encrypting…</p>';
+      fetch('/partager', { method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ document: carte.dataset.id }) })
+      .then(function (r) { return r.json().then(function (j) { return { code: r.status, corps: j }; }); })
+      .then(function (r) {
+        b.disabled = false;
+        if (r.code !== 200 || !r.corps.ok) {
+          sortie.innerHTML = '<p class="note erreur">' + e(r.corps.erreur || r.code) + '</p>';
+          return;
+        }
+        sortie.innerHTML = lienBoite('Public link', r.corps.public, false)
+          + (r.corps.presentation ? lienBoite('Presentation link', r.corps.presentation, true) : '')
+          // ⚠️ On ne redessine PAS la liste ici : elle effacerait les liens qu'on vient
+          // d'afficher, et le lien de présentation ne se montre qu'une fois. Elle se remet
+          // à jour au prochain chargement de la page.
+          + '<p class="note">Online now · ' + e(r.corps.octets) + ' encrypted bytes · until '
+          + e(r.corps.expire || 'further notice') + '</p>';
+      })
+      .catch(function (err) {
+        b.disabled = false;
+        sortie.innerHTML = '<p class="note erreur">' + e(err.message) + '</p>';
+      });
+      return;
+    }
+
+    if (b.classList.contains('pt-deposer')) {
+      var choix = document.getElementById('pt-fichier');
+      var sortie = b.closest('.pt-depot').querySelector('.pt-resultat');
+      if (!choix.files || !choix.files[0]) {
+        sortie.innerHTML = '<p class="note erreur">Pick a file first.</p>';
+        return;
+      }
+      var fichier = choix.files[0];
+      b.disabled = true;
+      sortie.innerHTML = '<p class="note">Reading…</p>';
+      // Le contenu part en TEXTE dans le corps JSON : un Markdown est du texte, et le service
+      // n'a donc aucun analyseur multipart à maintenir.
+      fichier.text().then(function (texte) {
+        sortie.innerHTML = '<p class="note">Encrypting…</p>';
+        return fetch('/televerser', {
+          method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: fichier.name, contenu: texte,
+            titre: document.getElementById('pt-titre').value,
+            mode: document.getElementById('pt-mode').value,
+            expire: Number(document.getElementById('pt-expire').value) || 30
+          })
+        });
+      })
+      .then(function (r) { return r.json().then(function (j) { return { code: r.status, corps: j }; }); })
+      .then(function (r) {
+        b.disabled = false;
+        if (r.code !== 200 || !r.corps.ok) {
+          sortie.innerHTML = '<p class="note erreur">' + e(r.corps.erreur || r.code) + '</p>';
+          return;
+        }
+        choix.value = '';
+        document.getElementById('pt-titre').value = '';
+        sortie.innerHTML = '<p class="note">Added as <b>' + e(r.corps.document.nom) + '</b>, '
+          + 'and shared. It stays in the list below after a reload.</p>'
+          + lienBoite('Public link', r.corps.public, false)
+          + (r.corps.presentation ? lienBoite('Presentation link', r.corps.presentation, true) : '');
+      })
+      .catch(function (err) {
+        b.disabled = false;
+        sortie.innerHTML = '<p class="note erreur">' + e(err.message) + '</p>';
+      });
+      return;
+    }
+
+    if (b.classList.contains('pt-oublier')) {
+      b.disabled = true;
+      fetch('/oublier', { method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ document: b.dataset.id }) })
+      .then(chargerPartages).catch(function () { b.disabled = false; });
+      return;
+    }
+
+    if (b.classList.contains('pt-fermer')) {
+      b.disabled = true;
+      fetch('/refermer', { method: 'POST', headers: { 'X-Partage': '1', 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ id: b.dataset.id }) })
+      .then(chargerPartages).catch(function () { b.disabled = false; });
+    }
+  });
+
   if (bouton) bouton.addEventListener('click', recalculer);
 
   // ⭐ On the home screen the app has NO address bar: nothing to reload with. The button
@@ -957,11 +1128,15 @@
     if (document.visibilityState === 'visible' && Date.now() - dernier > 60000) {
       dernier = Date.now();
       charger();
+      chargerPartages();
     }
   });
 
   dernier = Date.now();
   charger();
+  // Après les chiffres, jamais avant : la rubrique des partages est un bonus, elle ne doit
+  // pas retarder la seule chose qu'on vient lire.
+  chargerPartages();
 
   // Enregistré APRÈS le premier chargement : l'installation du socle ne doit pas disputer
   // le réseau aux chiffres. Sans service worker — navigateur ancien, page ouverte en http

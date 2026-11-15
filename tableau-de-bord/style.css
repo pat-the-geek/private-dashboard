@@ -167,3 +167,95 @@ h3 a.lien { font-size: inherit; }
 footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);
          font-size: 0.74rem; color: var(--faible); text-align: center; }
 .erreur { background: #2A1C17; border-color: #4A332B; color: var(--rouge); }
+
+/* ─────────────────────────── Shares ───────────────────────────
+   The section appears only when the optional sharing service answers. A share is an action,
+   not a figure: hence buttons, and a link box built to be copied rather than read. */
+#partages:empty { display: none; }
+.pt-doc .sous { margin-bottom: .75rem; }
+.pt-doc button, .pt-table button, .pt-depot button {
+  font: inherit;
+  font-size: .82rem;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  padding: .45rem .9rem;
+  cursor: pointer;
+}
+.pt-doc button[disabled], .pt-table button[disabled], .pt-depot button[disabled]
+  { opacity: .45; cursor: default; }
+.pt-resultat:not(:empty) { margin-top: .9rem; }
+
+/* Le lien : en pleine largeur, coupé proprement, et un bouton pour l'emporter. Un lien de
+   présentation ne se lit pas à l'écran, il se copie. */
+.pt-lien { margin: .6rem 0; }
+.pt-etiq {
+  display: block;
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .2rem;
+}
+.pt-lien code {
+  display: block;
+  font-size: .76rem;
+  line-height: 1.45;
+  word-break: break-all;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .5rem .6rem;
+}
+.pt-copier {
+  margin-top: .4rem;
+  background: transparent !important;
+  color: var(--accent) !important;
+  border: 1px solid var(--border) !important;
+}
+.pt-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.pt-table td { padding: .45rem .4rem; border-top: 1px solid var(--border); vertical-align: middle; }
+.pt-table td:first-child code { font-size: .74rem; }
+.pt-table td:last-child { text-align: right; }
+.note.erreur { color: var(--rouge); }
+
+/* Le dépôt d'un document : un formulaire court, qui ne doit pas avoir l'air d'un formulaire. */
+.pt-depot input[type="file"] {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .6rem;
+}
+.pt-depot input[type="file"]::file-selector-button {
+  font: inherit;
+  font-size: .8rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .35rem .7rem;
+  margin-right: .6rem;
+  cursor: pointer;
+}
+.pt-champs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.pt-champs input[type="text"] { flex: 1 1 14rem; }
+.pt-champs input[type="number"] { width: 5.5rem; }
+.pt-champs input, .pt-champs select {
+  font: inherit;
+  font-size: .85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .4rem .55rem;
+}
+.pt-champs input::placeholder { color: var(--faible); }
+.pt-oublier {
+  margin-left: .5rem;
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+}
